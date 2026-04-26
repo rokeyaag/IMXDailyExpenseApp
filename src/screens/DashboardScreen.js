@@ -1,0 +1,108 @@
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
+import { useAuth } from "../context/AuthContext";
+import { expenseAPI } from "../services/api";
+
+export default function DashboardScreen({ navigation }) {
+  const { user, logout } = useAuth();
+  const [summary, setSummary] = useState(null);
+  const [expenses, setExpenses] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const today = new Date();
+  const month = today.getMonth() + 1;
+  const year = today.getFullYear();
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const [sumRes, expRes] = await Promise.all([
+        expenseAPI.summary({ month, year }),
+        expenseAPI.list({ month, year }),
+      ]);
+      setSummary(sumRes.data);
+      setExpenses(expRes.data.results || expRes.data);
+    } catch (e) {
+      console.log(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color="#6366F1" />;
+
+  return (
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.greeting}>??????, {user?.name}! ??</Text>
+        <TouchableOpacity onPress={logout}>
+          <Text style={styles.logout}>Logout</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.summaryRow}>
+        <View style={[styles.card, { backgroundColor: "#6366F1" }]}>
+          <Text style={styles.cardLabel}>??? ???</Text>
+          <Text style={styles.cardAmount}>? {summary?.total_expense?.toFixed(0) || 0}</Text>
+        </View>
+        <View style={[styles.card, { backgroundColor: "#10B981" }]}>
+          <Text style={styles.cardLabel}>??? ???</Text>
+          <Text style={styles.cardAmount}>? {summary?.total_income?.toFixed(0) || 0}</Text>
+        </View>
+      </View>
+
+      <View style={[styles.balanceCard, { backgroundColor: summary?.balance >= 0 ? "#6366F1" : "#EF4444" }]}>
+        <Text style={styles.balanceLabel}>?? ????? balance</Text>
+        <Text style={styles.balanceAmount}>? {summary?.balance?.toFixed(0) || 0}</Text>
+      </View>
+
+      <View style={styles.recentHeader}>
+        <Text style={styles.recentTitle}>?????????? ??????</Text>
+        <TouchableOpacity onPress={() => navigation.navigate("AddExpense", { onRefresh: fetchData })}>
+          <Text style={styles.addBtn}>+ ??? ????</Text>
+        </TouchableOpacity>
+      </View>
+
+      {expenses.slice(0, 10).map((item) => (
+        <View key={item.id} style={styles.expenseItem}>
+          <View>
+            <Text style={styles.expenseNote}>{item.note || "No note"}</Text>
+            <Text style={styles.expenseDate}>{item.date}</Text>
+          </View>
+          <Text style={[styles.expenseAmount, { color: item.type === "income" ? "#10B981" : "#EF4444" }]}>
+            {item.type === "income" ? "+" : "-"}? {item.amount}
+          </Text>
+        </View>
+      ))}
+
+      {expenses.length === 0 && (
+        <Text style={styles.empty}>???? ???? ?????? ???</Text>
+      )}
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container:     { flex: 1, backgroundColor: "#f8f9fa" },
+  header:        { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, paddingTop: 50 },
+  greeting:      { fontSize: 20, fontWeight: "bold", color: "#1f2937" },
+  logout:        { color: "#EF4444", fontSize: 14 },
+  summaryRow:    { flexDirection: "row", padding: 16, gap: 12 },
+  card:          { flex: 1, borderRadius: 16, padding: 16 },
+  cardLabel:     { color: "#fff", fontSize: 12, marginBottom: 8 },
+  cardAmount:    { color: "#fff", fontSize: 22, fontWeight: "bold" },
+  balanceCard:   { marginHorizontal: 16, borderRadius: 16, padding: 20, marginBottom: 20 },
+  balanceLabel:  { color: "#fff", fontSize: 14, marginBottom: 8 },
+  balanceAmount: { color: "#fff", fontSize: 32, fontWeight: "bold" },
+  recentHeader:  { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, marginBottom: 12 },
+  recentTitle:   { fontSize: 18, fontWeight: "bold", color: "#1f2937" },
+  addBtn:        { color: "#6366F1", fontWeight: "bold" },
+  expenseItem:   { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: "#fff", marginHorizontal: 16, marginBottom: 8, padding: 16, borderRadius: 12 },
+  expenseNote:   { fontSize: 15, color: "#1f2937", fontWeight: "500" },
+  expenseDate:   { fontSize: 12, color: "#6b7280", marginTop: 4 },
+  expenseAmount: { fontSize: 16, fontWeight: "bold" },
+  empty:         { textAlign: "center", color: "#6b7280", marginTop: 40, fontSize: 16 },
+});
