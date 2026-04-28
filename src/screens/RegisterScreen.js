@@ -1,8 +1,5 @@
 import React, { useState } from "react";
-import {
-  View, Text, TextInput, TouchableOpacity,
-  StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView
-} from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import { authAPI } from "../services/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "../context/AuthContext";
@@ -16,44 +13,32 @@ export default function RegisterScreen({ navigation }) {
   const { login } = useAuth();
 
   const handleRegister = async () => {
-    if (!name || !email || !password || !password2) {
-      Alert.alert("Error", "?? field ???? ????");
-      return;
-    }
-    if (password !== password2) {
-      Alert.alert("Error", "Password ????? ??");
-      return;
-    }
+    if (!name || !email || !password || !password2) { Alert.alert("Error", "Please fill all fields"); return; }
+    if (password !== password2) { Alert.alert("Error", "Passwords do not match"); return; }
     setLoading(true);
     try {
       const res = await authAPI.register({ name, email, password, password2, currency: "BDT" });
       await AsyncStorage.setItem("access_token", res.data.tokens.access);
       await AsyncStorage.setItem("refresh_token", res.data.tokens.refresh);
       await login(email, password);
-    } catch (e) {
-      Alert.alert("Error", "Registration failed");
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { Alert.alert("Error", "Registration failed"); }
+    finally { setLoading(false); }
   };
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>IMX Daily Expense</Text>
-        <Text style={styles.subtitle}>???? account ?????</Text>
-
-        <TextInput style={styles.input} placeholder="????? ???" value={name} onChangeText={setName} />
+        <Text style={styles.subtitle}>Create new account</Text>
+        <TextInput style={styles.input} placeholder="Your Name" value={name} onChangeText={setName} />
         <TextInput style={styles.input} placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
         <TextInput style={styles.input} placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry />
-        <TextInput style={styles.input} placeholder="Password ???? ???" value={password2} onChangeText={setPassword2} secureTextEntry />
-
+        <TextInput style={styles.input} placeholder="Confirm Password" value={password2} onChangeText={setPassword2} secureTextEntry />
         <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
           {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Register</Text>}
         </TouchableOpacity>
-
         <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-          <Text style={styles.link}>??? ???? account ???? Login ????</Text>
+          <Text style={styles.link}>Already have account? Login</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
