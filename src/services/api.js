@@ -1,12 +1,12 @@
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const BASE_URL = "https://undecided-humped-commute.ngrok-free.dev";
+const BASE_URL = "https://imx-daily-expense-backend-production.up.railway.app";
 
 const api = axios.create({
   baseURL: BASE_URL,
   timeout: 10000,
-  headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "true" },
+  headers: { "Content-Type": "application/json" },
 });
 
 api.interceptors.request.use(async (config) => {
