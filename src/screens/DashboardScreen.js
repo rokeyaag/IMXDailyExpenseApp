@@ -8,14 +8,11 @@ export default function DashboardScreen({ navigation }) {
   const [summary, setSummary] = useState(null);
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const today = new Date();
   const month = today.getMonth() + 1;
   const year = today.getFullYear();
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     try {
@@ -25,11 +22,8 @@ export default function DashboardScreen({ navigation }) {
       ]);
       setSummary(sumRes.data);
       setExpenses(expRes.data.results || expRes.data);
-    } catch (e) {
-      console.log(e);
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { console.log(e); }
+    finally { setLoading(false); }
   };
 
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color="#6366F1" />;
@@ -37,35 +31,31 @@ export default function DashboardScreen({ navigation }) {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.greeting}>??????, {user?.name}! ??</Text>
+        <Text style={styles.greeting}>Hello, {user?.name}!</Text>
         <TouchableOpacity onPress={logout}>
           <Text style={styles.logout}>Logout</Text>
         </TouchableOpacity>
       </View>
-
       <View style={styles.summaryRow}>
         <View style={[styles.card, { backgroundColor: "#6366F1" }]}>
-          <Text style={styles.cardLabel}>??? ???</Text>
-          <Text style={styles.cardAmount}>? {summary?.total_expense?.toFixed(0) || 0}</Text>
+          <Text style={styles.cardLabel}>Total Expense</Text>
+          <Text style={styles.cardAmount}>Tk {summary?.total_expense?.toFixed(0) || 0}</Text>
         </View>
         <View style={[styles.card, { backgroundColor: "#10B981" }]}>
-          <Text style={styles.cardLabel}>??? ???</Text>
-          <Text style={styles.cardAmount}>? {summary?.total_income?.toFixed(0) || 0}</Text>
+          <Text style={styles.cardLabel}>Total Income</Text>
+          <Text style={styles.cardAmount}>Tk {summary?.total_income?.toFixed(0) || 0}</Text>
         </View>
       </View>
-
       <View style={[styles.balanceCard, { backgroundColor: summary?.balance >= 0 ? "#6366F1" : "#EF4444" }]}>
-        <Text style={styles.balanceLabel}>?? ????? balance</Text>
-        <Text style={styles.balanceAmount}>? {summary?.balance?.toFixed(0) || 0}</Text>
+        <Text style={styles.balanceLabel}>This Month Balance</Text>
+        <Text style={styles.balanceAmount}>Tk {summary?.balance?.toFixed(0) || 0}</Text>
       </View>
-
       <View style={styles.recentHeader}>
-        <Text style={styles.recentTitle}>?????????? ??????</Text>
-        <TouchableOpacity onPress={() => navigation.navigate("AddExpense", { onRefresh: fetchData })}>
-          <Text style={styles.addBtn}>+ ??? ????</Text>
+        <Text style={styles.recentTitle}>Recent Transactions</Text>
+        <TouchableOpacity onPress={() => navigation.navigate("AddExpense")}>
+          <Text style={styles.addBtn}>+ Add New</Text>
         </TouchableOpacity>
       </View>
-
       {expenses.slice(0, 10).map((item) => (
         <View key={item.id} style={styles.expenseItem}>
           <View>
@@ -73,14 +63,11 @@ export default function DashboardScreen({ navigation }) {
             <Text style={styles.expenseDate}>{item.date}</Text>
           </View>
           <Text style={[styles.expenseAmount, { color: item.type === "income" ? "#10B981" : "#EF4444" }]}>
-            {item.type === "income" ? "+" : "-"}? {item.amount}
+            {item.type === "income" ? "+" : "-"}Tk {item.amount}
           </Text>
         </View>
       ))}
-
-      {expenses.length === 0 && (
-        <Text style={styles.empty}>???? ???? ?????? ???</Text>
-      )}
+      {expenses.length === 0 && <Text style={styles.empty}>No transactions yet</Text>}
     </ScrollView>
   );
 }
