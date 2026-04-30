@@ -35,10 +35,10 @@ export default function AIScreen({ navigation }) {
 
       <View style={styles.examples}>
         <Text style={styles.exampleTitle}>Examples:</Text>
-        <Text style={styles.example}>- "??????? ?? ???? ?????"</Text>
-        <Text style={styles.example}>- "???? ????? ?????"</Text>
-        <Text style={styles.example}>- "lunch 150 taka"</Text>
-        <Text style={styles.example}>- "grocery shopping 500"</Text>
+        <Text style={styles.example}>- rickshaw 50 taka</Text>
+        <Text style={styles.example}>- salary received 20000</Text>
+        <Text style={styles.example}>- lunch 150 taka</Text>
+        <Text style={styles.example}>- grocery shopping 500</Text>
       </View>
 
       <TextInput
@@ -71,18 +71,18 @@ export default function AIScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container:       { flex: 1, backgroundColor: "#f8f9fa", padding: 20 },
-  title:           { fontSize: 24, fontWeight: "bold", color: "#1f2937", marginTop: 40, marginBottom: 8 },
-  subtitle:        { fontSize: 14, color: "#6b7280", marginBottom: 20 },
-  examples:        { backgroundColor: "#fff", borderRadius: 12, padding: 16, marginBottom: 20 },
-  exampleTitle:    { fontSize: 14, fontWeight: "bold", color: "#1f2937", marginBottom: 8 },
-  example:         { fontSize: 13, color: "#6b7280", marginBottom: 4 },
-  input:           { backgroundColor: "#fff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 12, padding: 14, fontSize: 16, marginBottom: 16, minHeight: 80, textAlignVertical: "top" },
-  button:          { backgroundColor: "#6366F1", borderRadius: 12, padding: 16, alignItems: "center", marginBottom: 20 },
-  buttonText:      { color: "#fff", fontSize: 16, fontWeight: "bold" },
-  resultCard:      { backgroundColor: "#fff", borderRadius: 12, padding: 20, borderLeftWidth: 4, borderLeftColor: "#10B981" },
-  resultTitle:     { fontSize: 18, fontWeight: "bold", color: "#10B981", marginBottom: 12 },
-  resultText:      { fontSize: 14, color: "#1f2937", marginBottom: 6 },
-  dashboardBtn:    { backgroundColor: "#6366F1", borderRadius: 8, padding: 12, alignItems: "center", marginTop: 12 },
-  dashboardBtnText:{ color: "#fff", fontWeight: "bold" },
+  container:        { flex: 1, backgroundColor: "#f8f9fa", padding: 20 },
+  title:            { fontSize: 24, fontWeight: "bold", color: "#1f2937", marginTop: 40, marginBottom: 8 },
+  subtitle:         { fontSize: 14, color: "#6b7280", marginBottom: 20 },
+  examples:         { backgroundColor: "#fff", borderRadius: 12, padding: 16, marginBottom: 20 },
+  exampleTitle:     { fontSize: 14, fontWeight: "bold", color: "#1f2937", marginBottom: 8 },
+  example:          { fontSize: 13, color: "#6b7280", marginBottom: 4 },
+  input:            { backgroundColor: "#fff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 12, padding: 14, fontSize: 16, marginBottom: 16, minHeight: 80, textAlignVertical: "top" },
+  button:           { backgroundColor: "#6366F1", borderRadius: 12, padding: 16, alignItems: "center", marginBottom: 20 },
+  buttonText:       { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  resultCard:       { backgroundColor: "#fff", borderRadius: 12, padding: 20, borderLeftWidth: 4, borderLeftColor: "#10B981" },
+  resultTitle:      { fontSize: 18, fontWeight: "bold", color: "#10B981", marginBottom: 12 },
+  resultText:       { fontSize: 14, color: "#1f2937", marginBottom: 6 },
+  dashboardBtn:     { backgroundColor: "#6366F1", borderRadius: 8, padding: 12, alignItems: "center", marginTop: 12 },
+  dashboardBtnText: { color: "#fff", fontWeight: "bold" },
 });
