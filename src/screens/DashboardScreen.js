@@ -50,12 +50,15 @@ export default function DashboardScreen({ navigation }) {
         <Text style={styles.balanceLabel}>This Month Balance</Text>
         <Text style={styles.balanceAmount}>Tk {summary?.balance?.toFixed(0) || 0}</Text>
       </View>
-      <View style={styles.recentHeader}>
-        <Text style={styles.recentTitle}>Recent Transactions</Text>
-        <TouchableOpacity onPress={() => navigation.navigate("AddExpense")}>
-          <Text style={styles.addBtn}>+ Add New</Text>
+      <View style={styles.btnRow}>
+        <TouchableOpacity style={styles.addBtn} onPress={() => navigation.navigate("AddExpense")}>
+          <Text style={styles.addBtnText}>+ Add New</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.aiBtn} onPress={() => navigation.navigate("AI")}>
+          <Text style={styles.aiBtnText}>AI Entry</Text>
         </TouchableOpacity>
       </View>
+      <Text style={styles.recentTitle}>Recent Transactions</Text>
       {expenses.slice(0, 10).map((item) => (
         <View key={item.id} style={styles.expenseItem}>
           <View>
@@ -81,12 +84,15 @@ const styles = StyleSheet.create({
   card:          { flex: 1, borderRadius: 16, padding: 16 },
   cardLabel:     { color: "#fff", fontSize: 12, marginBottom: 8 },
   cardAmount:    { color: "#fff", fontSize: 22, fontWeight: "bold" },
-  balanceCard:   { marginHorizontal: 16, borderRadius: 16, padding: 20, marginBottom: 20 },
+  balanceCard:   { marginHorizontal: 16, borderRadius: 16, padding: 20, marginBottom: 16 },
   balanceLabel:  { color: "#fff", fontSize: 14, marginBottom: 8 },
   balanceAmount: { color: "#fff", fontSize: 32, fontWeight: "bold" },
-  recentHeader:  { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, marginBottom: 12 },
-  recentTitle:   { fontSize: 18, fontWeight: "bold", color: "#1f2937" },
-  addBtn:        { color: "#6366F1", fontWeight: "bold" },
+  btnRow:        { flexDirection: "row", paddingHorizontal: 16, gap: 12, marginBottom: 20 },
+  addBtn:        { flex: 1, backgroundColor: "#6366F1", borderRadius: 12, padding: 14, alignItems: "center" },
+  addBtnText:    { color: "#fff", fontWeight: "bold", fontSize: 15 },
+  aiBtn:         { flex: 1, backgroundColor: "#10B981", borderRadius: 12, padding: 14, alignItems: "center" },
+  aiBtnText:     { color: "#fff", fontWeight: "bold", fontSize: 15 },
+  recentTitle:   { fontSize: 18, fontWeight: "bold", color: "#1f2937", paddingHorizontal: 16, marginBottom: 12 },
   expenseItem:   { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: "#fff", marginHorizontal: 16, marginBottom: 8, padding: 16, borderRadius: 12 },
   expenseNote:   { fontSize: 15, color: "#1f2937", fontWeight: "500" },
   expenseDate:   { fontSize: 12, color: "#6b7280", marginTop: 4 },
