@@ -71,6 +71,9 @@ export default function ExpenseListScreen({ navigation }) {
       <Text style={[styles.expenseAmount, { color: item.type === "income" ? "#10B981" : "#EF4444" }]}>
         {item.type === "income" ? "+" : "-"}Tk {parseFloat(item.amount).toFixed(0)}
       </Text>
+      <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate("EditExpense", { expense: item })}>
+        <Text style={styles.editBtnText}>??</Text>
+      </TouchableOpacity>
       <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(item.id)}>
         <Text style={styles.deleteBtnText}>??</Text>
       </TouchableOpacity>
@@ -87,7 +90,6 @@ export default function ExpenseListScreen({ navigation }) {
         value={search}
         onChangeText={setSearch}
       />
-
       <View style={styles.typeFilter}>
         {[null, "expense", "income"].map((t) => (
           <TouchableOpacity
@@ -100,7 +102,6 @@ export default function ExpenseListScreen({ navigation }) {
           </TouchableOpacity>
         ))}
       </View>
-
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryFilter}>
         <TouchableOpacity
           style={[styles.catFilterBtn, selectedCategory === null && styles.catFilterBtnActive]}
@@ -118,9 +119,7 @@ export default function ExpenseListScreen({ navigation }) {
           </TouchableOpacity>
         ))}
       </ScrollView>
-
       <Text style={styles.resultCount}>{filtered.length} transactions</Text>
-
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id.toString()}
@@ -129,7 +128,6 @@ export default function ExpenseListScreen({ navigation }) {
         ListEmptyComponent={<Text style={styles.empty}>No transactions found</Text>}
         contentContainerStyle={{ padding: 16 }}
       />
-
       <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate("AddExpense")}>
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
@@ -156,9 +154,11 @@ const styles = StyleSheet.create({
   expenseInfo:          { flex: 1 },
   expenseNote:          { fontSize: 15, color: "#1f2937", fontWeight: "500" },
   expenseDate:          { fontSize: 12, color: "#6b7280", marginTop: 4 },
-  expenseAmount:        { fontSize: 15, fontWeight: "bold", marginRight: 12 },
+  expenseAmount:        { fontSize: 15, fontWeight: "bold", marginRight: 8 },
+  editBtn:              { padding: 6 },
+  editBtnText:          { fontSize: 16 },
   deleteBtn:            { padding: 6 },
-  deleteBtnText:        { fontSize: 18 },
+  deleteBtnText:        { fontSize: 16 },
   empty:                { textAlign: "center", color: "#6b7280", marginTop: 40, fontSize: 16 },
   fab:                  { position: "absolute", bottom: 24, right: 24, width: 56, height: 56, borderRadius: 28, backgroundColor: "#6366F1", justifyContent: "center", alignItems: "center", elevation: 5 },
   fabText:              { color: "#fff", fontSize: 28, fontWeight: "bold" },
