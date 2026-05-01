@@ -58,9 +58,14 @@ export default function DashboardScreen({ navigation }) {
           <Text style={styles.aiBtnText}>AI Entry</Text>
         </TouchableOpacity>
       </View>
-      <TouchableOpacity style={styles.budgetBtn} onPress={() => navigation.navigate("Budget")}>
-        <Text style={styles.budgetBtnText}>Budget Tracker</Text>
-      </TouchableOpacity>
+      <View style={styles.btnRow}>
+        <TouchableOpacity style={styles.budgetBtn} onPress={() => navigation.navigate("Budget")}>
+          <Text style={styles.budgetBtnText}>Budget</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.analyticsBtn} onPress={() => navigation.navigate("Analytics")}>
+          <Text style={styles.analyticsBtnText}>Analytics</Text>
+        </TouchableOpacity>
+      </View>
       <Text style={styles.recentTitle}>Recent Transactions</Text>
       {expenses.slice(0, 10).map((item) => (
         <View key={item.id} style={styles.expenseItem}>
@@ -79,28 +84,30 @@ export default function DashboardScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container:     { flex: 1, backgroundColor: "#f8f9fa" },
-  header:        { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, paddingTop: 50 },
-  greeting:      { fontSize: 20, fontWeight: "bold", color: "#1f2937" },
-  logout:        { color: "#EF4444", fontSize: 14 },
-  summaryRow:    { flexDirection: "row", padding: 16, gap: 12 },
-  card:          { flex: 1, borderRadius: 16, padding: 16 },
-  cardLabel:     { color: "#fff", fontSize: 12, marginBottom: 8 },
-  cardAmount:    { color: "#fff", fontSize: 22, fontWeight: "bold" },
-  balanceCard:   { marginHorizontal: 16, borderRadius: 16, padding: 20, marginBottom: 16 },
-  balanceLabel:  { color: "#fff", fontSize: 14, marginBottom: 8 },
-  balanceAmount: { color: "#fff", fontSize: 32, fontWeight: "bold" },
-  btnRow:        { flexDirection: "row", paddingHorizontal: 16, gap: 12, marginBottom: 12 },
-  addBtn:        { flex: 1, backgroundColor: "#6366F1", borderRadius: 12, padding: 14, alignItems: "center" },
-  addBtnText:    { color: "#fff", fontWeight: "bold", fontSize: 15 },
-  aiBtn:         { flex: 1, backgroundColor: "#10B981", borderRadius: 12, padding: 14, alignItems: "center" },
-  aiBtnText:     { color: "#fff", fontWeight: "bold", fontSize: 15 },
-  budgetBtn:     { marginHorizontal: 16, backgroundColor: "#F59E0B", borderRadius: 12, padding: 14, alignItems: "center", marginBottom: 20 },
-  budgetBtnText: { color: "#fff", fontWeight: "bold", fontSize: 15 },
-  recentTitle:   { fontSize: 18, fontWeight: "bold", color: "#1f2937", paddingHorizontal: 16, marginBottom: 12 },
-  expenseItem:   { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: "#fff", marginHorizontal: 16, marginBottom: 8, padding: 16, borderRadius: 12 },
-  expenseNote:   { fontSize: 15, color: "#1f2937", fontWeight: "500" },
-  expenseDate:   { fontSize: 12, color: "#6b7280", marginTop: 4 },
-  expenseAmount: { fontSize: 16, fontWeight: "bold" },
-  empty:         { textAlign: "center", color: "#6b7280", marginTop: 40, fontSize: 16 },
+  container:        { flex: 1, backgroundColor: "#f8f9fa" },
+  header:           { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, paddingTop: 50 },
+  greeting:         { fontSize: 20, fontWeight: "bold", color: "#1f2937" },
+  logout:           { color: "#EF4444", fontSize: 14 },
+  summaryRow:       { flexDirection: "row", padding: 16, gap: 12 },
+  card:             { flex: 1, borderRadius: 16, padding: 16 },
+  cardLabel:        { color: "#fff", fontSize: 12, marginBottom: 8 },
+  cardAmount:       { color: "#fff", fontSize: 22, fontWeight: "bold" },
+  balanceCard:      { marginHorizontal: 16, borderRadius: 16, padding: 20, marginBottom: 16 },
+  balanceLabel:     { color: "#fff", fontSize: 14, marginBottom: 8 },
+  balanceAmount:    { color: "#fff", fontSize: 32, fontWeight: "bold" },
+  btnRow:           { flexDirection: "row", paddingHorizontal: 16, gap: 12, marginBottom: 12 },
+  addBtn:           { flex: 1, backgroundColor: "#6366F1", borderRadius: 12, padding: 14, alignItems: "center" },
+  addBtnText:       { color: "#fff", fontWeight: "bold", fontSize: 15 },
+  aiBtn:            { flex: 1, backgroundColor: "#10B981", borderRadius: 12, padding: 14, alignItems: "center" },
+  aiBtnText:        { color: "#fff", fontWeight: "bold", fontSize: 15 },
+  budgetBtn:        { flex: 1, backgroundColor: "#F59E0B", borderRadius: 12, padding: 14, alignItems: "center" },
+  budgetBtnText:    { color: "#fff", fontWeight: "bold", fontSize: 15 },
+  analyticsBtn:     { flex: 1, backgroundColor: "#8B5CF6", borderRadius: 12, padding: 14, alignItems: "center" },
+  analyticsBtnText: { color: "#fff", fontWeight: "bold", fontSize: 15 },
+  recentTitle:      { fontSize: 18, fontWeight: "bold", color: "#1f2937", paddingHorizontal: 16, marginBottom: 12 },
+  expenseItem:      { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: "#fff", marginHorizontal: 16, marginBottom: 8, padding: 16, borderRadius: 12 },
+  expenseNote:      { fontSize: 15, color: "#1f2937", fontWeight: "500" },
+  expenseDate:      { fontSize: 12, color: "#6b7280", marginTop: 4 },
+  expenseAmount:    { fontSize: 16, fontWeight: "bold" },
+  empty:            { textAlign: "center", color: "#6b7280", marginTop: 40, fontSize: 16 },
 });
