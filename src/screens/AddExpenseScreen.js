@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, ScrollView } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, ScrollView, Platform } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { expenseAPI, categoryAPI } from "../services/api";
 
 export default function AddExpenseScreen({ navigation }) {
   const [type, setType] = useState("expense");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -19,11 +21,21 @@ export default function AddExpenseScreen({ navigation }) {
     if (!amount) { Alert.alert("Error", "Please enter amount"); return; }
     setLoading(true);
     try {
-      await expenseAPI.create({ type, amount, note, date, category: selectedCategory });
+      const dateStr = date.toISOString().split("T")[0];
+      await expenseAPI.create({ type, amount, note, date: dateStr, category: selectedCategory });
       Alert.alert("Success", "Transaction added!");
       navigation.goBack();
     } catch (e) { Alert.alert("Error", "Something went wrong"); }
     finally { setLoading(false); }
+  };
+
+  const onDateChange = (event, selectedDate) => {
+    setShowDatePicker(Platform.OS === "ios");
+    if (selectedDate) setDate(selectedDate);
+  };
+
+  const formatDate = (d) => {
+    return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
   };
 
   return (
@@ -45,7 +57,21 @@ export default function AddExpenseScreen({ navigation }) {
 
       <TextInput style={styles.input} placeholder="Amount (Tk)" value={amount} onChangeText={setAmount} keyboardType="numeric" />
       <TextInput style={styles.input} placeholder="Note (optional)" value={note} onChangeText={setNote} />
-      <TextInput style={styles.input} placeholder="Date (YYYY-MM-DD)" value={date} onChangeText={setDate} />
+
+      <TouchableOpacity style={styles.dateBtn} onPress={() => setShowDatePicker(true)}>
+        <Text style={styles.dateBtnLabel}>Date</Text>
+        <Text style={styles.dateBtnValue}>?? {formatDate(date)}</Text>
+      </TouchableOpacity>
+
+      {showDatePicker && (
+        <DateTimePicker
+          value={date}
+          mode="date"
+          display="default"
+          onChange={onDateChange}
+          maximumDate={new Date()}
+        />
+      )}
 
       <Text style={styles.label}>Category:</Text>
       <View style={styles.categoryGrid}>
@@ -83,6 +109,9 @@ const styles = StyleSheet.create({
   typeBtnText:        { fontSize: 16, color: "#6b7280", fontWeight: "500" },
   typeBtnTextActive:  { color: "#fff" },
   input:              { backgroundColor: "#fff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 12, padding: 14, marginBottom: 16, fontSize: 16 },
+  dateBtn:            { backgroundColor: "#fff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 12, padding: 14, marginBottom: 16, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  dateBtnLabel:       { fontSize: 16, color: "#6b7280" },
+  dateBtnValue:       { fontSize: 16, color: "#1f2937", fontWeight: "500" },
   label:              { fontSize: 16, fontWeight: "500", color: "#1f2937", marginBottom: 12 },
   categoryGrid:       { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 24 },
   catChip:            { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: "#e5e7eb", backgroundColor: "#fff" },
