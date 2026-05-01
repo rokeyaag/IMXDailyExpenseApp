@@ -55,12 +55,12 @@ export default function AddExpenseScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      <TextInput style={styles.input} placeholder="Amount (Tk)" value={amount} onChangeText={setAmount} keyboardType="numeric" />
-      <TextInput style={styles.input} placeholder="Note (optional)" value={note} onChangeText={setNote} />
+      <TextInput style={styles.input} placeholder="Enter amount (Tk)" placeholderTextColor="#9ca3af" value={amount} onChangeText={setAmount} keyboardType="numeric" />
+      <TextInput style={styles.input} placeholder="Add a note (optional)" placeholderTextColor="#9ca3af" value={note} onChangeText={setNote} />
 
       <TouchableOpacity style={styles.dateBtn} onPress={() => setShowDatePicker(true)}>
         <Text style={styles.dateBtnLabel}>Date</Text>
-        <Text style={styles.dateBtnValue}>?? {formatDate(date)}</Text>
+        <Text style={styles.dateBtnValue}>{formatDate(date)}</Text>
       </TouchableOpacity>
 
       {showDatePicker && (
@@ -73,51 +73,61 @@ export default function AddExpenseScreen({ navigation }) {
         />
       )}
 
-      <Text style={styles.label}>Category:</Text>
-      <View style={styles.categoryGrid}>
-        {categories.map((cat) => (
-          <TouchableOpacity
-            key={cat.id}
-            style={[styles.catChip, selectedCategory === cat.id && { backgroundColor: cat.color || "#6366F1", borderColor: cat.color || "#6366F1" }]}
-            onPress={() => setSelectedCategory(selectedCategory === cat.id ? null : cat.id)}>
-            <Text style={[styles.catChipText, selectedCategory === cat.id && { color: "#fff" }]}>
-              {cat.icon} {cat.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
-        <TouchableOpacity
-          style={styles.newCatBtn}
-          onPress={() => navigation.navigate("Categories")}>
+      <View style={styles.categoryHeader}>
+        <Text style={styles.label}>Category</Text>
+        <TouchableOpacity style={styles.newCatBtn} onPress={() => navigation.navigate("Categories")}>
           <Text style={styles.newCatBtnText}>+ New</Text>
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={[styles.saveBtn, type === "income" && { backgroundColor: "#10B981" }]} onPress={handleSave} disabled={loading}>
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Save</Text>}
+      <View style={styles.categoryGrid}>
+        {categories.map((cat) => (
+          <TouchableOpacity
+            key={cat.id}
+            style={[
+              styles.catChip,
+              selectedCategory === cat.id && { backgroundColor: cat.color || "#6366F1", borderColor: cat.color || "#6366F1" }
+            ]}
+            onPress={() => setSelectedCategory(selectedCategory === cat.id ? null : cat.id)}>
+            <Text style={styles.catIcon}>{cat.icon}</Text>
+            <Text style={[styles.catChipText, selectedCategory === cat.id && { color: "#fff" }]}>
+              {cat.name.split(" ")[0]}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <TouchableOpacity
+        style={[styles.saveBtn, type === "income" && { backgroundColor: "#10B981" }]}
+        onPress={handleSave}
+        disabled={loading}>
+        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Save Transaction</Text>}
       </TouchableOpacity>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container:          { flex: 1, backgroundColor: "#f8f9fa", padding: 20 },
-  title:              { fontSize: 24, fontWeight: "bold", color: "#1f2937", marginBottom: 24, marginTop: 10 },
-  typeRow:            { flexDirection: "row", gap: 12, marginBottom: 20 },
-  typeBtn:            { flex: 1, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: "#e5e7eb", alignItems: "center" },
-  typeBtnExpense:     { backgroundColor: "#EF4444", borderColor: "#EF4444" },
-  typeBtnIncome:      { backgroundColor: "#10B981", borderColor: "#10B981" },
-  typeBtnText:        { fontSize: 16, color: "#6b7280", fontWeight: "500" },
-  typeBtnTextActive:  { color: "#fff" },
-  input:              { backgroundColor: "#fff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 12, padding: 14, marginBottom: 16, fontSize: 16 },
-  dateBtn:            { backgroundColor: "#fff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 12, padding: 14, marginBottom: 16, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  dateBtnLabel:       { fontSize: 16, color: "#6b7280" },
-  dateBtnValue:       { fontSize: 16, color: "#1f2937", fontWeight: "500" },
-  label:              { fontSize: 16, fontWeight: "500", color: "#1f2937", marginBottom: 12 },
-  categoryGrid:       { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 24 },
-  catChip:            { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: "#e5e7eb", backgroundColor: "#fff" },
-  catChipText:        { fontSize: 13, color: "#374151" },
-  newCatBtn:          { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: "#6366F1", backgroundColor: "#fff" },
-  newCatBtnText:      { fontSize: 13, color: "#6366F1", fontWeight: "bold" },
-  saveBtn:            { backgroundColor: "#6366F1", borderRadius: 12, padding: 16, alignItems: "center", marginBottom: 40 },
-  saveBtnText:        { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  container:        { flex: 1, backgroundColor: "#f8f9fa", padding: 20 },
+  title:            { fontSize: 24, fontWeight: "bold", color: "#1f2937", marginBottom: 24, marginTop: 10 },
+  typeRow:          { flexDirection: "row", gap: 12, marginBottom: 20 },
+  typeBtn:          { flex: 1, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: "#e5e7eb", alignItems: "center", backgroundColor: "#fff" },
+  typeBtnExpense:   { backgroundColor: "#EF4444", borderColor: "#EF4444" },
+  typeBtnIncome:    { backgroundColor: "#10B981", borderColor: "#10B981" },
+  typeBtnText:      { fontSize: 16, color: "#6b7280", fontWeight: "600" },
+  typeBtnTextActive:{ color: "#fff" },
+  input:            { backgroundColor: "#fff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 12, padding: 14, marginBottom: 16, fontSize: 16, color: "#1f2937" },
+  dateBtn:          { backgroundColor: "#fff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 12, padding: 14, marginBottom: 20, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  dateBtnLabel:     { fontSize: 16, color: "#9ca3af" },
+  dateBtnValue:     { fontSize: 16, color: "#1f2937", fontWeight: "600" },
+  categoryHeader:   { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
+  label:            { fontSize: 16, fontWeight: "600", color: "#1f2937" },
+  newCatBtn:        { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: "#6366F1" },
+  newCatBtnText:    { fontSize: 13, color: "#6366F1", fontWeight: "bold" },
+  categoryGrid:     { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 24 },
+  catChip:          { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: "#e5e7eb", backgroundColor: "#fff" },
+  catIcon:          { fontSize: 16 },
+  catChipText:      { fontSize: 13, color: "#374151", fontWeight: "500" },
+  saveBtn:          { backgroundColor: "#6366F1", borderRadius: 12, padding: 16, alignItems: "center", marginBottom: 40 },
+  saveBtnText:      { color: "#fff", fontSize: 16, fontWeight: "bold" },
 });
