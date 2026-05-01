@@ -7,6 +7,7 @@ import LoginScreen from "../screens/LoginScreen";
 import RegisterScreen from "../screens/RegisterScreen";
 import DashboardScreen from "../screens/DashboardScreen";
 import AddExpenseScreen from "../screens/AddExpenseScreen";
+import EditExpenseScreen from "../screens/EditExpenseScreen";
 import AIScreen from "../screens/AIScreen";
 import BudgetScreen from "../screens/BudgetScreen";
 import AnalyticsScreen from "../screens/AnalyticsScreen";
@@ -34,6 +35,7 @@ export default function AppNavigator() {
           <>
             <Stack.Screen name="Dashboard" component={DashboardScreen} />
             <Stack.Screen name="AddExpense" component={AddExpenseScreen} options={{ headerShown: true, title: "New Transaction" }} />
+            <Stack.Screen name="EditExpense" component={EditExpenseScreen} options={{ headerShown: true, title: "Edit Transaction" }} />
             <Stack.Screen name="AI" component={AIScreen} options={{ headerShown: true, title: "AI Entry" }} />
             <Stack.Screen name="Budget" component={BudgetScreen} options={{ headerShown: true, title: "Budget" }} />
             <Stack.Screen name="Analytics" component={AnalyticsScreen} options={{ headerShown: true, title: "Analytics" }} />
