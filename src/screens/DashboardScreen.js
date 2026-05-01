@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from "react-native";
 import { useAuth } from "../context/AuthContext";
 import { expenseAPI } from "../services/api";
 
@@ -8,6 +8,7 @@ export default function DashboardScreen({ navigation }) {
   const [summary, setSummary] = useState(null);
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const today = new Date();
   const month = today.getMonth() + 1;
   const year = today.getFullYear();
@@ -23,13 +24,17 @@ export default function DashboardScreen({ navigation }) {
       setSummary(sumRes.data);
       setExpenses(expRes.data.results || expRes.data);
     } catch (e) { console.log(e); }
-    finally { setLoading(false); }
+    finally { setLoading(false); setRefreshing(false); }
   };
+
+  const onRefresh = () => { setRefreshing(true); fetchData(); };
 
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color="#6366F1" />;
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       <View style={styles.header}>
         <Text style={styles.greeting}>Hello, {user?.name}!</Text>
         <TouchableOpacity onPress={() => navigation.navigate("Profile")}>
@@ -68,15 +73,21 @@ export default function DashboardScreen({ navigation }) {
           <Text style={styles.analyticsBtnText}>Analytics</Text>
         </TouchableOpacity>
       </View>
-      <Text style={styles.recentTitle}>Recent Transactions</Text>
-      {expenses.slice(0, 10).map((item) => (
+      <View style={styles.recentHeader}>
+        <Text style={styles.recentTitle}>Recent Transactions</Text>
+        <TouchableOpacity onPress={() => navigation.navigate("ExpenseList")}>
+          <Text style={styles.seeAll}>See All</Text>
+        </TouchableOpacity>
+      </View>
+      {expenses.slice(0, 5).map((item) => (
         <View key={item.id} style={styles.expenseItem}>
-          <View>
+          <View style={[styles.typeDot, { backgroundColor: item.type === "income" ? "#10B981" : "#EF4444" }]} />
+          <View style={{ flex: 1 }}>
             <Text style={styles.expenseNote}>{item.note || "No note"}</Text>
             <Text style={styles.expenseDate}>{item.date}</Text>
           </View>
           <Text style={[styles.expenseAmount, { color: item.type === "income" ? "#10B981" : "#EF4444" }]}>
-            {item.type === "income" ? "+" : "-"}Tk {item.amount}
+            {item.type === "income" ? "+" : "-"}Tk {parseFloat(item.amount).toFixed(0)}
           </Text>
         </View>
       ))}
@@ -107,10 +118,13 @@ const styles = StyleSheet.create({
   budgetBtnText:    { color: "#fff", fontWeight: "bold", fontSize: 15 },
   analyticsBtn:     { flex: 1, backgroundColor: "#8B5CF6", borderRadius: 12, padding: 14, alignItems: "center" },
   analyticsBtnText: { color: "#fff", fontWeight: "bold", fontSize: 15 },
-  recentTitle:      { fontSize: 18, fontWeight: "bold", color: "#1f2937", paddingHorizontal: 16, marginBottom: 12 },
-  expenseItem:      { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: "#fff", marginHorizontal: 16, marginBottom: 8, padding: 16, borderRadius: 12 },
+  recentHeader:     { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, marginBottom: 12 },
+  recentTitle:      { fontSize: 18, fontWeight: "bold", color: "#1f2937" },
+  seeAll:           { color: "#6366F1", fontWeight: "bold" },
+  expenseItem:      { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", marginHorizontal: 16, marginBottom: 8, padding: 16, borderRadius: 12 },
+  typeDot:          { width: 10, height: 10, borderRadius: 5, marginRight: 12 },
   expenseNote:      { fontSize: 15, color: "#1f2937", fontWeight: "500" },
   expenseDate:      { fontSize: 12, color: "#6b7280", marginTop: 4 },
-  expenseAmount:    { fontSize: 16, fontWeight: "bold" },
+  expenseAmount:    { fontSize: 15, fontWeight: "bold" },
   empty:            { textAlign: "center", color: "#6b7280", marginTop: 40, fontSize: 16 },
 });
