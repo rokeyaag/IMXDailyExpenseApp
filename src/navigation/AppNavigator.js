@@ -10,6 +10,7 @@ import AddExpenseScreen from "../screens/AddExpenseScreen";
 import AIScreen from "../screens/AIScreen";
 import BudgetScreen from "../screens/BudgetScreen";
 import AnalyticsScreen from "../screens/AnalyticsScreen";
+import ProfileScreen from "../screens/ProfileScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -34,6 +35,7 @@ export default function AppNavigator() {
             <Stack.Screen name="AI" component={AIScreen} options={{ headerShown: true, title: "AI Entry" }} />
             <Stack.Screen name="Budget" component={BudgetScreen} options={{ headerShown: true, title: "Budget" }} />
             <Stack.Screen name="Analytics" component={AnalyticsScreen} options={{ headerShown: true, title: "Analytics" }} />
+            <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: true, title: "Profile" }} />
           </>
         ) : (
           <>

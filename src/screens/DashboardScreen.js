@@ -32,8 +32,10 @@ export default function DashboardScreen({ navigation }) {
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.greeting}>Hello, {user?.name}!</Text>
-        <TouchableOpacity onPress={logout}>
-          <Text style={styles.logout}>Logout</Text>
+        <TouchableOpacity onPress={() => navigation.navigate("Profile")}>
+          <View style={styles.avatarSmall}>
+            <Text style={styles.avatarSmallText}>{user?.name?.charAt(0).toUpperCase()}</Text>
+          </View>
         </TouchableOpacity>
       </View>
       <View style={styles.summaryRow}>
@@ -87,7 +89,8 @@ const styles = StyleSheet.create({
   container:        { flex: 1, backgroundColor: "#f8f9fa" },
   header:           { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, paddingTop: 50 },
   greeting:         { fontSize: 20, fontWeight: "bold", color: "#1f2937" },
-  logout:           { color: "#EF4444", fontSize: 14 },
+  avatarSmall:      { width: 40, height: 40, borderRadius: 20, backgroundColor: "#6366F1", justifyContent: "center", alignItems: "center" },
+  avatarSmallText:  { fontSize: 18, fontWeight: "bold", color: "#fff" },
   summaryRow:       { flexDirection: "row", padding: 16, gap: 12 },
   card:             { flex: 1, borderRadius: 16, padding: 16 },
   cardLabel:        { color: "#fff", fontSize: 12, marginBottom: 8 },
