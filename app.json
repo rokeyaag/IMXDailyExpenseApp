@@ -18,8 +18,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff",
-        "monochromeImage": "./assets/adaptive-icon.png"
+        "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.imxuser.IMXDailyExpenseApp"
@@ -28,7 +27,14 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow IMX Daily Expense to access your photos.",
+          "cameraPermission": "Allow IMX Daily Expense to use your camera."
+        }
+      ]
     ],
     "extra": {
       "eas": {

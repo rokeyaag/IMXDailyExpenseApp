@@ -1,28 +1,27 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Dimensions } from "react-native";
+import { PieChart } from "react-native-chart-kit";
 import { useAuth } from "../context/AuthContext";
 import { expenseAPI } from "../services/api";
+
+const screenWidth = Dimensions.get("window").width;
 
 export default function DashboardScreen({ navigation }) {
   const { user } = useAuth();
   const [summary, setSummary] = useState(null);
-  const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const today = new Date();
   const month = today.getMonth() + 1;
   const year = today.getFullYear();
+  const monthName = today.toLocaleString("en", { month: "long" });
 
   useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     try {
-      const [sumRes, expRes] = await Promise.all([
-        expenseAPI.summary({ month, year }),
-        expenseAPI.list({ month, year }),
-      ]);
+      const sumRes = await expenseAPI.summary({ month, year });
       setSummary(sumRes.data);
-      setExpenses(expRes.data.results || expRes.data);
     } catch (e) { console.log(e); }
     finally { setLoading(false); setRefreshing(false); }
   };
@@ -31,109 +30,115 @@ export default function DashboardScreen({ navigation }) {
 
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color="#6366F1" />;
 
+  const income = parseFloat(summary?.total_income || 0);
+  const expense = parseFloat(summary?.total_expense || 0);
+  const balance = parseFloat(summary?.balance || 0);
+
+  const pieData = income === 0 && expense === 0 ? [
+    { name: "No data", amount: 1, color: "#e5e7eb", legendFontColor: "#9ca3af", legendFontSize: 12 }
+  ] : [
+    { name: "Income", amount: income, color: "#10B981", legendFontColor: "#1f2937", legendFontSize: 12 },
+    { name: "Expense", amount: expense, color: "#EF4444", legendFontColor: "#1f2937", legendFontSize: 12 },
+    ...(Math.abs(balance) > 0 ? [{ name: "Balance", amount: Math.abs(balance), color: "#F59E0B", legendFontColor: "#1f2937", legendFontSize: 12 }] : []),
+  ];
+
   const buttons = [
-    { label: "+ Add New", color: "#6366F1", screen: "AddExpense" },
-    { label: "AI Entry", color: "#10B981", screen: "AI" },
-    { label: "Budget", color: "#F59E0B", screen: "Budget" },
-    { label: "Analytics", color: "#8B5CF6", screen: "Analytics" },
+    { label: "Add Income", icon: "+", color: "#10B981", screen: "AddExpense", params: { defaultType: "income" } },
+    { label: "Add Expense", icon: "-", color: "#EF4444", screen: "AddExpense", params: { defaultType: "expense" } },
+    { label: "AI Entry", icon: "AI", color: "#6366F1", screen: "AI" },
+    { label: "Transactions", icon: "=", color: "#06B6D4", screen: "ExpenseList" },
+    { label: "Budget", icon: "B", color: "#F59E0B", screen: "Budget" },
+    { label: "Analytics", icon: "A", color: "#8B5CF6", screen: "Analytics" },
+    { label: "Categories", icon: "C", color: "#EC4899", screen: "Categories" },
+    { label: "Profile", icon: user?.name?.charAt(0).toUpperCase() || "P", color: "#84CC16", screen: "Profile" },
   ];
 
   return (
-    <View style={styles.wrapper}>
-      <ScrollView
-        style={styles.container}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>Hello, {user?.name}!</Text>
-            <Text style={styles.subGreeting}>Welcome back</Text>
-          </View>
-          <TouchableOpacity onPress={() => navigation.navigate("Profile")}>
-            <View style={styles.avatarSmall}>
-              <Text style={styles.avatarSmallText}>{user?.name?.charAt(0).toUpperCase()}</Text>
-            </View>
-          </TouchableOpacity>
-        </View>
+    <ScrollView
+      style={styles.container}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
 
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.greeting}>Hello, {user?.name}!</Text>
+          <Text style={styles.subGreeting}>Welcome back</Text>
+        </View>
+        <TouchableOpacity onPress={() => navigation.navigate("Profile")}>
+          <View style={styles.avatarSmall}>
+            <Text style={styles.avatarSmallText}>{user?.name?.charAt(0).toUpperCase()}</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.chartCard}>
+        <Text style={styles.chartTitle}>{monthName} {year}</Text>
+        <PieChart
+          data={pieData}
+          width={screenWidth - 48}
+          height={180}
+          chartConfig={{ color: (opacity = 1) => `rgba(0,0,0,${opacity})` }}
+          accessor="amount"
+          backgroundColor="transparent"
+          paddingLeft="20"
+          hasLegend={true}
+          absolute={false}
+        />
         <View style={styles.summaryRow}>
-          <View style={[styles.card, { backgroundColor: "#6366F1" }]}>
-            <Text style={styles.cardLabel}>Total Expense</Text>
-            <Text style={styles.cardAmount}>Tk {summary?.total_expense?.toFixed(0) || 0}</Text>
+          <View style={styles.summaryItem}>
+            <View style={[styles.dot, { backgroundColor: "#10B981" }]} />
+            <Text style={styles.summaryLabel}>Income</Text>
+            <Text style={[styles.summaryValue, { color: "#10B981" }]}>Tk {income.toFixed(0)}</Text>
           </View>
-          <View style={[styles.card, { backgroundColor: "#10B981" }]}>
-            <Text style={styles.cardLabel}>Total Income</Text>
-            <Text style={styles.cardAmount}>Tk {summary?.total_income?.toFixed(0) || 0}</Text>
+          <View style={styles.summaryItem}>
+            <View style={[styles.dot, { backgroundColor: "#EF4444" }]} />
+            <Text style={styles.summaryLabel}>Expense</Text>
+            <Text style={[styles.summaryValue, { color: "#EF4444" }]}>Tk {expense.toFixed(0)}</Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <View style={[styles.dot, { backgroundColor: "#F59E0B" }]} />
+            <Text style={styles.summaryLabel}>Balance</Text>
+            <Text style={[styles.summaryValue, { color: balance >= 0 ? "#F59E0B" : "#EF4444" }]}>Tk {balance.toFixed(0)}</Text>
           </View>
         </View>
+      </View>
 
-        <View style={[styles.balanceCard, { backgroundColor: summary?.balance >= 0 ? "#6366F1" : "#EF4444" }]}>
-          <Text style={styles.balanceLabel}>This Month Balance</Text>
-          <Text style={styles.balanceAmount}>Tk {summary?.balance?.toFixed(0) || 0}</Text>
-        </View>
-
-        <View style={styles.btnGrid}>
-          {buttons.map((btn) => (
-            <TouchableOpacity
-              key={btn.screen}
-              style={[styles.gridBtn, { backgroundColor: btn.color }]}
-              onPress={() => navigation.navigate(btn.screen)}
-              activeOpacity={0.8}>
-              <Text style={styles.gridBtnText}>{btn.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <View style={styles.recentHeader}>
-          <Text style={styles.recentTitle}>Recent Transactions</Text>
-          <TouchableOpacity onPress={() => navigation.navigate("ExpenseList")}>
-            <Text style={styles.seeAll}>See All</Text>
-          </TouchableOpacity>
-        </View>
-
-        {expenses.slice(0, 10).map((item) => (
-          <View key={item.id} style={styles.expenseItem}>
-            <View style={[styles.typeDot, { backgroundColor: item.type === "income" ? "#10B981" : "#EF4444" }]} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.expenseNote}>{item.note || "No note"}</Text>
-              <Text style={styles.expenseDate}>{item.date}</Text>
+      <View style={styles.btnGrid}>
+        {buttons.map((btn) => (
+          <TouchableOpacity
+            key={btn.label}
+            style={styles.gridItem}
+            onPress={() => navigation.navigate(btn.screen, btn.params)}
+            activeOpacity={0.8}>
+            <View style={[styles.gridIcon, { backgroundColor: btn.color }]}>
+              <Text style={styles.gridIconText}>{btn.icon}</Text>
             </View>
-            <Text style={[styles.expenseAmount, { color: item.type === "income" ? "#10B981" : "#EF4444" }]}>
-              {item.type === "income" ? "+" : "-"}Tk {parseFloat(item.amount).toFixed(0)}
-            </Text>
-          </View>
+            <Text style={styles.gridLabel}>{btn.label}</Text>
+          </TouchableOpacity>
         ))}
-        {expenses.length === 0 && <Text style={styles.empty}>No transactions yet</Text>}
-        <View style={{ height: 30 }} />
-      </ScrollView>
-    </View>
+      </View>
+
+      <View style={{ height: 30 }} />
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper:          { flex: 1, backgroundColor: "#f8f9fa" },
-  container:        { flex: 1 },
-  header:           { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, paddingTop: 50 },
-  greeting:         { fontSize: 22, fontWeight: "bold", color: "#1f2937" },
-  subGreeting:      { fontSize: 13, color: "#6b7280", marginTop: 2 },
-  avatarSmall:      { width: 44, height: 44, borderRadius: 22, backgroundColor: "#6366F1", justifyContent: "center", alignItems: "center" },
-  avatarSmallText:  { fontSize: 20, fontWeight: "bold", color: "#fff" },
-  summaryRow:       { flexDirection: "row", paddingHorizontal: 16, gap: 12, marginBottom: 12 },
-  card:             { flex: 1, borderRadius: 16, padding: 16 },
-  cardLabel:        { color: "#fff", fontSize: 12, marginBottom: 8, opacity: 0.9 },
-  cardAmount:       { color: "#fff", fontSize: 22, fontWeight: "bold" },
-  balanceCard:      { marginHorizontal: 16, borderRadius: 16, padding: 20, marginBottom: 16 },
-  balanceLabel:     { color: "#fff", fontSize: 14, marginBottom: 8, opacity: 0.9 },
-  balanceAmount:    { color: "#fff", fontSize: 32, fontWeight: "bold" },
-  btnGrid:          { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 16, gap: 10, marginBottom: 20 },
-  gridBtn:          { flex: 1, minWidth: "45%", borderRadius: 14, padding: 16, alignItems: "center", elevation: 3, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4 },
-  gridBtnText:      { color: "#fff", fontWeight: "bold", fontSize: 15 },
-  recentHeader:     { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, marginBottom: 12 },
-  recentTitle:      { fontSize: 18, fontWeight: "bold", color: "#1f2937" },
-  seeAll:           { color: "#6366F1", fontWeight: "bold" },
-  expenseItem:      { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", marginHorizontal: 16, marginBottom: 8, padding: 16, borderRadius: 12 },
-  typeDot:          { width: 10, height: 10, borderRadius: 5, marginRight: 12 },
-  expenseNote:      { fontSize: 15, color: "#1f2937", fontWeight: "500" },
-  expenseDate:      { fontSize: 12, color: "#6b7280", marginTop: 4 },
-  expenseAmount:    { fontSize: 15, fontWeight: "bold" },
-  empty:            { textAlign: "center", color: "#6b7280", marginTop: 40, fontSize: 16 },
+  container:       { flex: 1, backgroundColor: "#f8f9fa" },
+  header:          { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, paddingTop: 50 },
+  greeting:        { fontSize: 22, fontWeight: "bold", color: "#1f2937" },
+  subGreeting:     { fontSize: 13, color: "#6b7280", marginTop: 2 },
+  avatarSmall:     { width: 44, height: 44, borderRadius: 22, backgroundColor: "#6366F1", justifyContent: "center", alignItems: "center" },
+  avatarSmallText: { fontSize: 20, fontWeight: "bold", color: "#fff" },
+  chartCard:       { backgroundColor: "#fff", marginHorizontal: 16, borderRadius: 20, padding: 16, elevation: 2 },
+  chartTitle:      { fontSize: 16, fontWeight: "bold", color: "#1f2937", textAlign: "center", marginBottom: 8 },
+  summaryRow:      { flexDirection: "row", justifyContent: "space-around", marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#f3f4f6" },
+  summaryItem:     { alignItems: "center" },
+  dot:             { width: 8, height: 8, borderRadius: 4, marginBottom: 4 },
+  summaryLabel:    { fontSize: 11, color: "#6b7280", marginBottom: 2 },
+  summaryValue:    { fontSize: 13, fontWeight: "bold" },
+  btnGrid:         { flexDirection: "row", flexWrap: "wrap", padding: 16, gap: 16, justifyContent: "center", marginTop: 8 },
+  gridItem:        { alignItems: "center", width: (screenWidth - 96) / 4 },
+  gridIcon:        { width: 60, height: 60, borderRadius: 30, justifyContent: "center", alignItems: "center", marginBottom: 6, elevation: 3 },
+  gridIconText:    { fontSize: 20, fontWeight: "bold", color: "#fff" },
+  gridLabel:       { fontSize: 11, color: "#374151", textAlign: "center", fontWeight: "500" },
 });
