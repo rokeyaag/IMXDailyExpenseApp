@@ -3,8 +3,9 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityInd
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { expenseAPI, categoryAPI } from "../services/api";
 
-export default function AddExpenseScreen({ navigation }) {
-  const [type, setType] = useState("expense");
+export default function AddExpenseScreen({ navigation, route }) {
+  const defaultType = route?.params?.defaultType || "expense";
+  const [type, setType] = useState(defaultType);
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [date, setDate] = useState(new Date());
@@ -84,10 +85,7 @@ export default function AddExpenseScreen({ navigation }) {
         {categories.map((cat) => (
           <TouchableOpacity
             key={cat.id}
-            style={[
-              styles.catChip,
-              selectedCategory === cat.id && { backgroundColor: cat.color || "#6366F1", borderColor: cat.color || "#6366F1" }
-            ]}
+            style={[styles.catChip, selectedCategory === cat.id && { backgroundColor: cat.color || "#6366F1", borderColor: cat.color || "#6366F1" }]}
             onPress={() => setSelectedCategory(selectedCategory === cat.id ? null : cat.id)}>
             <Text style={styles.catIcon}>{cat.icon}</Text>
             <Text style={[styles.catChipText, selectedCategory === cat.id && { color: "#fff" }]}>
@@ -108,26 +106,26 @@ export default function AddExpenseScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container:        { flex: 1, backgroundColor: "#f8f9fa", padding: 20 },
-  title:            { fontSize: 24, fontWeight: "bold", color: "#1f2937", marginBottom: 24, marginTop: 10 },
-  typeRow:          { flexDirection: "row", gap: 12, marginBottom: 20 },
-  typeBtn:          { flex: 1, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: "#e5e7eb", alignItems: "center", backgroundColor: "#fff" },
-  typeBtnExpense:   { backgroundColor: "#EF4444", borderColor: "#EF4444" },
-  typeBtnIncome:    { backgroundColor: "#10B981", borderColor: "#10B981" },
-  typeBtnText:      { fontSize: 16, color: "#6b7280", fontWeight: "600" },
-  typeBtnTextActive:{ color: "#fff" },
-  input:            { backgroundColor: "#fff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 12, padding: 14, marginBottom: 16, fontSize: 16, color: "#1f2937" },
-  dateBtn:          { backgroundColor: "#fff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 12, padding: 14, marginBottom: 20, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  dateBtnLabel:     { fontSize: 16, color: "#9ca3af" },
-  dateBtnValue:     { fontSize: 16, color: "#1f2937", fontWeight: "600" },
-  categoryHeader:   { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  label:            { fontSize: 16, fontWeight: "600", color: "#1f2937" },
-  newCatBtn:        { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: "#6366F1" },
-  newCatBtnText:    { fontSize: 13, color: "#6366F1", fontWeight: "bold" },
-  categoryGrid:     { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 24 },
-  catChip:          { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: "#e5e7eb", backgroundColor: "#fff" },
-  catIcon:          { fontSize: 16 },
-  catChipText:      { fontSize: 13, color: "#374151", fontWeight: "500" },
-  saveBtn:          { backgroundColor: "#6366F1", borderRadius: 12, padding: 16, alignItems: "center", marginBottom: 40 },
-  saveBtnText:      { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  container:          { flex: 1, backgroundColor: "#f8f9fa", padding: 20 },
+  title:              { fontSize: 24, fontWeight: "bold", color: "#1f2937", marginBottom: 24, marginTop: 10 },
+  typeRow:            { flexDirection: "row", gap: 12, marginBottom: 20 },
+  typeBtn:            { flex: 1, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: "#e5e7eb", alignItems: "center", backgroundColor: "#fff" },
+  typeBtnExpense:     { backgroundColor: "#EF4444", borderColor: "#EF4444" },
+  typeBtnIncome:      { backgroundColor: "#10B981", borderColor: "#10B981" },
+  typeBtnText:        { fontSize: 16, color: "#6b7280", fontWeight: "600" },
+  typeBtnTextActive:  { color: "#fff" },
+  input:              { backgroundColor: "#fff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 12, padding: 14, marginBottom: 16, fontSize: 16, color: "#1f2937" },
+  dateBtn:            { backgroundColor: "#fff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 12, padding: 14, marginBottom: 20, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  dateBtnLabel:       { fontSize: 16, color: "#9ca3af" },
+  dateBtnValue:       { fontSize: 16, color: "#1f2937", fontWeight: "600" },
+  categoryHeader:     { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
+  label:              { fontSize: 16, fontWeight: "600", color: "#1f2937" },
+  newCatBtn:          { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: "#6366F1" },
+  newCatBtnText:      { fontSize: 13, color: "#6366F1", fontWeight: "bold" },
+  categoryGrid:       { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 24 },
+  catChip:            { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: "#e5e7eb", backgroundColor: "#fff" },
+  catIcon:            { fontSize: 16 },
+  catChipText:        { fontSize: 13, color: "#374151", fontWeight: "500" },
+  saveBtn:            { backgroundColor: "#6366F1", borderRadius: 12, padding: 16, alignItems: "center", marginBottom: 40 },
+  saveBtnText:        { color: "#fff", fontSize: 16, fontWeight: "bold" },
 });

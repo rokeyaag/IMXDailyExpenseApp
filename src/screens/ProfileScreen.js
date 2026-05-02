@@ -10,7 +10,8 @@ export default function ProfileScreen({ navigation }) {
   const [currency, setCurrency] = useState(user?.currency || "BDT");
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [photo, setPhoto] = useState(user?.profile_picture || null);
+  const [photo, setPhoto] = useState(user?.avatar || null);
+  const [uploading, setUploading] = useState(false);
 
   const handlePickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -22,7 +23,7 @@ export default function ProfileScreen({ navigation }) {
       quality: 0.7,
     });
     if (!result.canceled) {
-      setPhoto(result.assets[0].uri);
+      uploadPhoto(result.assets[0]);
     }
   };
 
@@ -35,7 +36,29 @@ export default function ProfileScreen({ navigation }) {
       quality: 0.7,
     });
     if (!result.canceled) {
-      setPhoto(result.assets[0].uri);
+      uploadPhoto(result.assets[0]);
+    }
+  };
+
+  const uploadPhoto = async (asset) => {
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("avatar", {
+        uri: asset.uri,
+        type: asset.mimeType || "image/jpeg",
+        name: "avatar.jpg",
+      });
+      const res = await api.patch("/api/auth/profile/", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setPhoto(res.data.avatar);
+      if (setUser) setUser(res.data);
+      Alert.alert("Success", "Photo updated!");
+    } catch (e) {
+      Alert.alert("Error", "Failed to upload photo");
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -62,12 +85,21 @@ export default function ProfileScreen({ navigation }) {
     ]);
   };
 
+  const BASE_URL = "https://imx-daily-expense-backend-production.up.railway.app";
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.avatarBox}>
         <TouchableOpacity onPress={showPhotoOptions} style={styles.avatarWrapper}>
-          {photo ? (
-            <Image source={{ uri: photo }} style={styles.avatarImage} />
+          {uploading ? (
+            <View style={styles.avatar}>
+              <ActivityIndicator color="#fff" />
+            </View>
+          ) : photo ? (
+            <Image
+              source={{ uri: photo.startsWith("http") ? photo : `${BASE_URL}${photo}` }}
+              style={styles.avatarImage}
+            />
           ) : (
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>{user?.name?.charAt(0).toUpperCase()}</Text>
@@ -84,7 +116,6 @@ export default function ProfileScreen({ navigation }) {
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Account Info</Text>
-
         <Text style={styles.label}>Full Name</Text>
         <TextInput
           style={[styles.input, !editing && styles.inputDisabled]}
@@ -93,14 +124,12 @@ export default function ProfileScreen({ navigation }) {
           editable={editing}
           placeholder="Your name"
         />
-
         <Text style={styles.label}>Email</Text>
         <TextInput
           style={[styles.input, styles.inputDisabled]}
           value={user?.email}
           editable={false}
         />
-
         <Text style={styles.label}>Currency</Text>
         <View style={styles.currencyRow}>
           {["BDT", "USD", "EUR", "GBP"].map((cur) => (
@@ -112,7 +141,6 @@ export default function ProfileScreen({ navigation }) {
             </TouchableOpacity>
           ))}
         </View>
-
         {editing ? (
           <View style={styles.editBtnRow}>
             <TouchableOpacity style={styles.cancelBtn} onPress={() => { setEditing(false); setName(user?.name || ""); }}>
