@@ -20,7 +20,9 @@ export default function LoginScreen({ navigation }) {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <View style={styles.logoBox}>
-        <Image source={require("../../assets/icon.png")} style={styles.logo} resizeMode="contain" />
+        <View style={styles.logoWrapper}>
+          <Image source={require("../../assets/icon.png")} style={styles.logo} resizeMode="contain" />
+        </View>
         <Text style={styles.title}>IMX Daily Expense</Text>
         <Text style={styles.subtitle}>Login to your account</Text>
       </View>
@@ -32,6 +34,7 @@ export default function LoginScreen({ navigation }) {
         onChangeText={setEmail}
         keyboardType="email-address"
         autoCapitalize="none"
+        color="#1f2937"
       />
       <View style={styles.passwordBox}>
         <TextInput
@@ -41,6 +44,7 @@ export default function LoginScreen({ navigation }) {
           value={password}
           onChangeText={setPassword}
           secureTextEntry={!showPassword}
+          color="#1f2937"
         />
         <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
           <Text style={styles.eyeText}>{showPassword ? "Hide" : "Show"}</Text>
@@ -59,12 +63,13 @@ export default function LoginScreen({ navigation }) {
 const styles = StyleSheet.create({
   container:     { flex: 1, justifyContent: "center", padding: 24, backgroundColor: "#f8f9fa" },
   logoBox:       { alignItems: "center", marginBottom: 40 },
-  logo:          { width: 120, height: 120, marginBottom: 16 },
+  logoWrapper:   { width: 110, height: 110, borderRadius: 55, backgroundColor: "#fff", justifyContent: "center", alignItems: "center", marginBottom: 16, elevation: 3, overflow: "hidden" },
+  logo:          { width: 100, height: 100 },
   title:         { fontSize: 26, fontWeight: "bold", color: "#6366F1", textAlign: "center", marginBottom: 6 },
   subtitle:      { fontSize: 14, color: "#6b7280", textAlign: "center" },
-  input:         { backgroundColor: "#fff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 12, padding: 14, marginBottom: 16, fontSize: 16 },
+  input:         { backgroundColor: "#fff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 12, padding: 14, marginBottom: 16, fontSize: 16, color: "#1f2937" },
   passwordBox:   { backgroundColor: "#fff", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 12, flexDirection: "row", alignItems: "center", marginBottom: 16 },
-  passwordInput: { flex: 1, padding: 14, fontSize: 16 },
+  passwordInput: { flex: 1, padding: 14, fontSize: 16, color: "#1f2937" },
   eyeBtn:        { paddingHorizontal: 14 },
   eyeText:       { color: "#6366F1", fontWeight: "500", fontSize: 14 },
   button:        { backgroundColor: "#6366F1", borderRadius: 12, padding: 16, alignItems: "center", marginBottom: 16 },
