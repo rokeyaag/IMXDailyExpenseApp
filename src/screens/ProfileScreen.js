@@ -4,6 +4,8 @@ import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 
+const BASE_URL = "https://ecommerce-api-production-3e99.up.railway.app";
+
 export default function ProfileScreen({ navigation }) {
   const { user, logout, setUser } = useAuth();
   const [name, setName] = useState(user?.name || "");
@@ -12,6 +14,12 @@ export default function ProfileScreen({ navigation }) {
   const [editing, setEditing] = useState(false);
   const [photo, setPhoto] = useState(user?.avatar || null);
   const [uploading, setUploading] = useState(false);
+
+  const getAvatarUri = (av) => {
+    if (!av) return null;
+    if (av.startsWith("http")) return av;
+    return `${BASE_URL}${av}`;
+  };
 
   const handlePickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -22,9 +30,7 @@ export default function ProfileScreen({ navigation }) {
       aspect: [1, 1],
       quality: 0.7,
     });
-    if (!result.canceled) {
-      uploadPhoto(result.assets[0]);
-    }
+    if (!result.canceled) { uploadPhoto(result.assets[0]); }
   };
 
   const handleTakePhoto = async () => {
@@ -35,9 +41,7 @@ export default function ProfileScreen({ navigation }) {
       aspect: [1, 1],
       quality: 0.7,
     });
-    if (!result.canceled) {
-      uploadPhoto(result.assets[0]);
-    }
+    if (!result.canceled) { uploadPhoto(result.assets[0]); }
   };
 
   const uploadPhoto = async (asset) => {
@@ -52,10 +56,12 @@ export default function ProfileScreen({ navigation }) {
       const res = await api.patch("/api/auth/profile/", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      setPhoto(res.data.avatar);
-      if (setUser) setUser(res.data);
+      const newAvatar = res.data.avatar;
+      setPhoto(newAvatar);
+      if (setUser) setUser({ ...user, ...res.data });
       Alert.alert("Success", "Photo updated!");
     } catch (e) {
+      console.log("Upload error:", e.response?.data || e.message);
       Alert.alert("Error", "Failed to upload photo");
     } finally {
       setUploading(false);
@@ -67,7 +73,7 @@ export default function ProfileScreen({ navigation }) {
     setLoading(true);
     try {
       const res = await api.patch("/api/auth/profile/", { name, currency });
-      if (setUser) setUser(res.data);
+      if (setUser) setUser({ ...user, ...res.data });
       Alert.alert("Success", "Profile updated!");
       setEditing(false);
     } catch (e) {
@@ -85,7 +91,7 @@ export default function ProfileScreen({ navigation }) {
     ]);
   };
 
-  const BASE_URL = "https://imx-daily-expense-backend-production.up.railway.app";
+  const avatarUri = getAvatarUri(photo);
 
   return (
     <ScrollView style={styles.container}>
@@ -93,12 +99,16 @@ export default function ProfileScreen({ navigation }) {
         <TouchableOpacity onPress={showPhotoOptions} style={styles.avatarWrapper}>
           {uploading ? (
             <View style={styles.avatar}>
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color="#fff" size="large" />
             </View>
-          ) : photo ? (
+          ) : avatarUri ? (
             <Image
-              source={{ uri: photo.startsWith("http") ? photo : `${BASE_URL}${photo}` }}
+              source={{ uri: avatarUri }}
               style={styles.avatarImage}
+              onError={(e) => {
+                console.log("Image load error:", e.nativeEvent.error);
+                setPhoto(null);
+              }}
             />
           ) : (
             <View style={styles.avatar}>
@@ -123,12 +133,14 @@ export default function ProfileScreen({ navigation }) {
           onChangeText={setName}
           editable={editing}
           placeholder="Your name"
+          color="#1f2937"
         />
         <Text style={styles.label}>Email</Text>
         <TextInput
           style={[styles.input, styles.inputDisabled]}
           value={user?.email}
           editable={false}
+          color="#9ca3af"
         />
         <Text style={styles.label}>Currency</Text>
         <View style={styles.currencyRow}>
@@ -160,6 +172,8 @@ export default function ProfileScreen({ navigation }) {
       <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
         <Text style={styles.logoutBtnText}>Logout</Text>
       </TouchableOpacity>
+
+      <View style={{ height: 40 }} />
     </ScrollView>
   );
 }
@@ -168,11 +182,11 @@ const styles = StyleSheet.create({
   container:          { flex: 1, backgroundColor: "#f8f9fa" },
   avatarBox:          { alignItems: "center", paddingTop: 40, paddingBottom: 24, backgroundColor: "#fff", marginBottom: 16 },
   avatarWrapper:      { position: "relative", marginBottom: 12 },
-  avatar:             { width: 90, height: 90, borderRadius: 45, backgroundColor: "#6366F1", justifyContent: "center", alignItems: "center", elevation: 4 },
-  avatarImage:        { width: 90, height: 90, borderRadius: 45 },
-  avatarText:         { fontSize: 36, fontWeight: "bold", color: "#fff" },
-  cameraBtn:          { position: "absolute", bottom: 0, right: 0, width: 28, height: 28, borderRadius: 14, backgroundColor: "#6366F1", justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: "#fff" },
-  cameraBtnText:      { color: "#fff", fontSize: 18, fontWeight: "bold", lineHeight: 22 },
+  avatar:             { width: 100, height: 100, borderRadius: 50, backgroundColor: "#6366F1", justifyContent: "center", alignItems: "center", elevation: 4 },
+  avatarImage:        { width: 100, height: 100, borderRadius: 50, elevation: 4 },
+  avatarText:         { fontSize: 40, fontWeight: "bold", color: "#fff" },
+  cameraBtn:          { position: "absolute", bottom: 0, right: 0, width: 30, height: 30, borderRadius: 15, backgroundColor: "#6366F1", justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: "#fff" },
+  cameraBtnText:      { color: "#fff", fontSize: 20, fontWeight: "bold", lineHeight: 24 },
   userName:           { fontSize: 22, fontWeight: "bold", color: "#1f2937" },
   userEmail:          { fontSize: 14, color: "#6b7280", marginTop: 4 },
   tapHint:            { fontSize: 12, color: "#9ca3af", marginTop: 4 },
