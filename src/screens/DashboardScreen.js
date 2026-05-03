@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Dimensions, Animated, Image } from "react-native";
 import { PieChart } from "react-native-chart-kit";
 import { useAuth } from "../context/AuthContext";
-import { expenseAPI } from "../services/api";
+import { expenseAPI, authAPI } from "../services/api";
 
 const screenWidth = Dimensions.get("window").width;
 const BASE_URL = "https://imx-daily-expense-backend-production.up.railway.app";
@@ -14,7 +14,7 @@ function AnimatedGridBtn({ btn, onPress }) {
   return (
     <TouchableOpacity onPress={onPress} onPressIn={onIn} onPressOut={onOut} activeOpacity={1} style={styles.gridItem}>
       <Animated.View style={[styles.gridIcon, { backgroundColor: btn.color, transform: [{ scale }] }]}>
-        <Text style={btn.small ? styles.gridIconTextSm : styles.gridIconText}>{btn.icon}</Text>
+        <Text style={styles.gridIconText}>{btn.icon}</Text>
       </Animated.View>
       <Text style={styles.gridLabel}>{btn.label}</Text>
     </TouchableOpacity>
@@ -38,7 +38,7 @@ function AvatarSmall({ user, onPress }) {
 }
 
 export default function DashboardScreen({ navigation }) {
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const [summary, setSummary] = useState(null);
   const [recent, setRecent] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -52,12 +52,14 @@ export default function DashboardScreen({ navigation }) {
 
   const fetchData = async () => {
     try {
-      const [sumRes, expRes] = await Promise.all([
+      const [sumRes, expRes, profileRes] = await Promise.all([
         expenseAPI.summary({ month, year }),
         expenseAPI.list({ page_size: 5 }),
+        authAPI.profile(),
       ]);
       setSummary(sumRes.data);
       setRecent(expRes.data.results || expRes.data);
+      if (setUser) setUser(profileRes.data);
     } catch (e) { console.log(e); }
     finally { setLoading(false); setRefreshing(false); }
   };
@@ -79,13 +81,13 @@ export default function DashboardScreen({ navigation }) {
   ];
 
   const buttons = [
-    { label: "Income",    icon: "+",   color: "#10B981", screen: "AddExpense", params: { defaultType: "income" } },
-    { label: "Expense",   icon: "-",   color: "#EF4444", screen: "AddExpense", params: { defaultType: "expense" } },
-    { label: "AI Entry",  icon: "AI",  color: "#6366F1", screen: "AI" },
-    { label: "History",   icon: "|||", color: "#06B6D4", screen: "ExpenseList", small: true },
-    { label: "Budget",    icon: "$",   color: "#F59E0B", screen: "Budget" },
-    { label: "Analytics", icon: "/\\", color: "#8B5CF6", screen: "Analytics", small: true },
-    { label: "Category",  icon: "###", color: "#EC4899", screen: "Categories", small: true },
+    { label: "Income",    icon: "+",  color: "#10B981", screen: "AddExpense", params: { defaultType: "income" } },
+    { label: "Expense",   icon: "-",  color: "#EF4444", screen: "AddExpense", params: { defaultType: "expense" } },
+    { label: "AI Entry",  icon: "AI", color: "#6366F1", screen: "AI" },
+    { label: "History",   icon: "=",  color: "#06B6D4", screen: "ExpenseList" },
+    { label: "Budget",    icon: "B",  color: "#F59E0B", screen: "Budget" },
+    { label: "Analytics", icon: "A",  color: "#8B5CF6", screen: "Analytics" },
+    { label: "Category",  icon: "C",  color: "#EC4899", screen: "Categories" },
     { label: "Profile",   icon: user?.name?.charAt(0).toUpperCase() || "P", color: "#84CC16", screen: "Profile" },
   ];
 
@@ -144,11 +146,7 @@ export default function DashboardScreen({ navigation }) {
       </View>
       <View style={styles.btnGrid}>
         {buttons.map((btn) => (
-          <AnimatedGridBtn
-            key={btn.label}
-            btn={btn}
-            onPress={() => navigation.navigate(btn.screen, btn.params)}
-          />
+          <AnimatedGridBtn key={btn.label} btn={btn} onPress={() => navigation.navigate(btn.screen, btn.params)} />
         ))}
       </View>
 
@@ -173,9 +171,7 @@ export default function DashboardScreen({ navigation }) {
               onPress={() => navigation.navigate("EditExpense", { expense: item })}
               activeOpacity={0.7}>
               <View style={[styles.txIcon, { backgroundColor: item.category?.color || "#6366F1" }]}>
-                <Text style={styles.txIconText}>
-                  {item.category?.name?.charAt(0)?.toUpperCase() || "?"}
-                </Text>
+                <Text style={styles.txIconText}>{item.category?.name?.charAt(0)?.toUpperCase() || "?"}</Text>
               </View>
               <View style={styles.txInfo}>
                 <Text style={styles.txNote} numberOfLines={1}>{item.note || item.category?.name || "Expense"}</Text>
@@ -195,42 +191,41 @@ export default function DashboardScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container:          { flex: 1, backgroundColor: "#f0f0ff" },
-  header:             { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingTop: 52, paddingBottom: 12 },
-  greeting:           { fontSize: 20, fontWeight: "bold", color: "#1f2937" },
-  subGreeting:        { fontSize: 13, color: "#6b7280", marginTop: 2 },
-  avatarSmall:        { width: 44, height: 44, borderRadius: 22, backgroundColor: "#6366F1", justifyContent: "center", alignItems: "center", elevation: 3 },
-  avatarSmallText:    { fontSize: 20, fontWeight: "bold", color: "#fff" },
-  avatarSmallImg:     { width: 44, height: 44, borderRadius: 22, elevation: 3 },
-  balanceCard:        { backgroundColor: "#6366F1", marginHorizontal: 16, borderRadius: 20, padding: 20, marginBottom: 12, elevation: 4, shadowColor: "#6366F1", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 10 },
-  balanceLabel:       { color: "rgba(255,255,255,0.8)", fontSize: 13, marginBottom: 4 },
-  balanceAmount:      { fontSize: 36, fontWeight: "bold", color: "#fff", marginBottom: 16 },
-  balanceRow:         { flexDirection: "row", backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 12, padding: 12 },
-  balanceItem:        { flex: 1, alignItems: "center" },
-  balanceItemLabel:   { color: "rgba(255,255,255,0.8)", fontSize: 12, marginBottom: 4 },
-  balanceItemValue:   { color: "#fff", fontSize: 15, fontWeight: "bold" },
-  balanceDivider:     { width: 1, backgroundColor: "rgba(255,255,255,0.3)" },
-  chartCard:          { backgroundColor: "#fff", marginHorizontal: 16, borderRadius: 20, padding: 16, marginBottom: 12, elevation: 2 },
-  chartTitle:         { fontSize: 15, fontWeight: "bold", color: "#1f2937", marginBottom: 8 },
-  sectionHeader:      { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, marginBottom: 8, marginTop: 4 },
-  sectionTitle:       { fontSize: 16, fontWeight: "bold", color: "#1f2937" },
-  seeAll:             { fontSize: 13, color: "#6366F1", fontWeight: "600" },
-  btnGrid:            { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 12, gap: 8, justifyContent: "center", marginBottom: 8 },
-  gridItem:           { alignItems: "center", width: (screenWidth - 80) / 4, paddingVertical: 4 },
-  gridIcon:           { width: 58, height: 58, borderRadius: 29, justifyContent: "center", alignItems: "center", marginBottom: 6, elevation: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 4 },
-  gridIconText:       { fontSize: 22, fontWeight: "bold", color: "#fff" },
-  gridIconTextSm:     { fontSize: 14, fontWeight: "bold", color: "#fff", letterSpacing: 1 },
-  gridLabel:          { fontSize: 11, color: "#374151", textAlign: "center", fontWeight: "500" },
-  recentCard:         { backgroundColor: "#fff", marginHorizontal: 16, borderRadius: 20, overflow: "hidden", elevation: 2 },
-  emptyBox:           { padding: 32, alignItems: "center" },
-  emptyText:          { fontSize: 15, color: "#6b7280", fontWeight: "500" },
-  emptySubText:       { fontSize: 13, color: "#9ca3af", marginTop: 4 },
-  txRow:              { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14 },
-  txBorder:           { borderBottomWidth: 1, borderBottomColor: "#f3f4f6" },
-  txIcon:             { width: 42, height: 42, borderRadius: 21, justifyContent: "center", alignItems: "center", marginRight: 12 },
-  txIconText:         { fontSize: 16, fontWeight: "bold", color: "#fff" },
-  txInfo:             { flex: 1 },
-  txNote:             { fontSize: 14, color: "#1f2937", fontWeight: "500" },
-  txDate:             { fontSize: 12, color: "#9ca3af", marginTop: 2 },
-  txAmount:           { fontSize: 15, fontWeight: "bold" },
+  container:       { flex: 1, backgroundColor: "#f0f0ff" },
+  header:          { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingTop: 52, paddingBottom: 12 },
+  greeting:        { fontSize: 20, fontWeight: "bold", color: "#1f2937" },
+  subGreeting:     { fontSize: 13, color: "#6b7280", marginTop: 2 },
+  avatarSmall:     { width: 44, height: 44, borderRadius: 22, backgroundColor: "#6366F1", justifyContent: "center", alignItems: "center", elevation: 3 },
+  avatarSmallText: { fontSize: 20, fontWeight: "bold", color: "#fff" },
+  avatarSmallImg:  { width: 44, height: 44, borderRadius: 22, elevation: 3 },
+  balanceCard:     { backgroundColor: "#6366F1", marginHorizontal: 16, borderRadius: 20, padding: 20, marginBottom: 12, elevation: 4 },
+  balanceLabel:    { color: "rgba(255,255,255,0.8)", fontSize: 13, marginBottom: 4 },
+  balanceAmount:   { fontSize: 36, fontWeight: "bold", color: "#fff", marginBottom: 16 },
+  balanceRow:      { flexDirection: "row", backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 12, padding: 12 },
+  balanceItem:     { flex: 1, alignItems: "center" },
+  balanceItemLabel:{ color: "rgba(255,255,255,0.8)", fontSize: 12, marginBottom: 4 },
+  balanceItemValue:{ color: "#fff", fontSize: 15, fontWeight: "bold" },
+  balanceDivider:  { width: 1, backgroundColor: "rgba(255,255,255,0.3)" },
+  chartCard:       { backgroundColor: "#fff", marginHorizontal: 16, borderRadius: 20, padding: 16, marginBottom: 12, elevation: 2 },
+  chartTitle:      { fontSize: 15, fontWeight: "bold", color: "#1f2937", marginBottom: 8 },
+  sectionHeader:   { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, marginBottom: 8, marginTop: 4 },
+  sectionTitle:    { fontSize: 16, fontWeight: "bold", color: "#1f2937" },
+  seeAll:          { fontSize: 13, color: "#6366F1", fontWeight: "600" },
+  btnGrid:         { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 12, gap: 8, justifyContent: "center", marginBottom: 8 },
+  gridItem:        { alignItems: "center", width: (screenWidth - 80) / 4, paddingVertical: 4 },
+  gridIcon:        { width: 58, height: 58, borderRadius: 29, justifyContent: "center", alignItems: "center", marginBottom: 6, elevation: 4 },
+  gridIconText:    { fontSize: 20, fontWeight: "bold", color: "#fff" },
+  gridLabel:       { fontSize: 11, color: "#374151", textAlign: "center", fontWeight: "500" },
+  recentCard:      { backgroundColor: "#fff", marginHorizontal: 16, borderRadius: 20, overflow: "hidden", elevation: 2 },
+  emptyBox:        { padding: 32, alignItems: "center" },
+  emptyText:       { fontSize: 15, color: "#6b7280", fontWeight: "500" },
+  emptySubText:    { fontSize: 13, color: "#9ca3af", marginTop: 4 },
+  txRow:           { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14 },
+  txBorder:        { borderBottomWidth: 1, borderBottomColor: "#f3f4f6" },
+  txIcon:          { width: 42, height: 42, borderRadius: 21, justifyContent: "center", alignItems: "center", marginRight: 12 },
+  txIconText:      { fontSize: 16, fontWeight: "bold", color: "#fff" },
+  txInfo:          { flex: 1 },
+  txNote:          { fontSize: 14, color: "#1f2937", fontWeight: "500" },
+  txDate:          { fontSize: 12, color: "#9ca3af", marginTop: 2 },
+  txAmount:        { fontSize: 15, fontWeight: "bold" },
 });
