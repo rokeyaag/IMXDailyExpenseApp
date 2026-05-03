@@ -28,7 +28,8 @@ export const AuthProvider = ({ children }) => {
     const res = await authAPI.login({ email, password });
     await AsyncStorage.setItem("access_token", res.data.tokens.access);
     await AsyncStorage.setItem("refresh_token", res.data.tokens.refresh);
-    setUser(res.data.user);
+    const profileRes = await authAPI.profile();
+    setUser(profileRes.data);
   };
 
   const logout = async () => {

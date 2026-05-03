@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Dimensions, Animated } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Dimensions, Animated, Image } from "react-native";
 import { PieChart } from "react-native-chart-kit";
 import { useAuth } from "../context/AuthContext";
 import { expenseAPI } from "../services/api";
 
 const screenWidth = Dimensions.get("window").width;
+const BASE_URL = "https://imx-daily-expense-backend-production.up.railway.app";
 
 function AnimatedGridBtn({ btn, onPress }) {
   const scale = useRef(new Animated.Value(1)).current;
@@ -13,9 +14,25 @@ function AnimatedGridBtn({ btn, onPress }) {
   return (
     <TouchableOpacity onPress={onPress} onPressIn={onIn} onPressOut={onOut} activeOpacity={1} style={styles.gridItem}>
       <Animated.View style={[styles.gridIcon, { backgroundColor: btn.color, transform: [{ scale }] }]}>
-        <Text style={styles.gridIconText}>{btn.icon}</Text>
+        <Text style={btn.small ? styles.gridIconTextSm : styles.gridIconText}>{btn.icon}</Text>
       </Animated.View>
       <Text style={styles.gridLabel}>{btn.label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+function AvatarSmall({ user, onPress }) {
+  const avatar = user?.avatar;
+  const avatarUri = avatar ? (avatar.startsWith("http") ? avatar : `${BASE_URL}${avatar}`) : null;
+  return (
+    <TouchableOpacity onPress={onPress}>
+      {avatarUri ? (
+        <Image source={{ uri: avatarUri }} style={styles.avatarSmallImg} />
+      ) : (
+        <View style={styles.avatarSmall}>
+          <Text style={styles.avatarSmallText}>{user?.name?.charAt(0).toUpperCase()}</Text>
+        </View>
+      )}
     </TouchableOpacity>
   );
 }
@@ -62,14 +79,14 @@ export default function DashboardScreen({ navigation }) {
   ];
 
   const buttons = [
-    { label: "Income", icon: "+", color: "#10B981", screen: "AddExpense", params: { defaultType: "income" } },
-    { label: "Expense", icon: "-", color: "#EF4444", screen: "AddExpense", params: { defaultType: "expense" } },
-    { label: "AI Entry", icon: "AI", color: "#6366F1", screen: "AI" },
-    { label: "History", icon: "=", color: "#06B6D4", screen: "ExpenseList" },
-    { label: "Budget", icon: "?", color: "#F59E0B", screen: "Budget" },
-    { label: "Analytics", icon: "?", color: "#8B5CF6", screen: "Analytics" },
-    { label: "Category", icon: "?", color: "#EC4899", screen: "Categories" },
-    { label: "Profile", icon: user?.name?.charAt(0).toUpperCase() || "P", color: "#84CC16", screen: "Profile" },
+    { label: "Income",    icon: "+",   color: "#10B981", screen: "AddExpense", params: { defaultType: "income" } },
+    { label: "Expense",   icon: "-",   color: "#EF4444", screen: "AddExpense", params: { defaultType: "expense" } },
+    { label: "AI Entry",  icon: "AI",  color: "#6366F1", screen: "AI" },
+    { label: "History",   icon: "|||", color: "#06B6D4", screen: "ExpenseList", small: true },
+    { label: "Budget",    icon: "$",   color: "#F59E0B", screen: "Budget" },
+    { label: "Analytics", icon: "/\\", color: "#8B5CF6", screen: "Analytics", small: true },
+    { label: "Category",  icon: "###", color: "#EC4899", screen: "Categories", small: true },
+    { label: "Profile",   icon: user?.name?.charAt(0).toUpperCase() || "P", color: "#84CC16", screen: "Profile" },
   ];
 
   const getTypeColor = (type) => type === "income" ? "#10B981" : "#EF4444";
@@ -81,20 +98,14 @@ export default function DashboardScreen({ navigation }) {
       showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#6366F1"]} />}>
 
-      {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Hello, {user?.name}! ??</Text>
+          <Text style={styles.greeting}>Hello, {user?.name}!</Text>
           <Text style={styles.subGreeting}>{monthName} {year}</Text>
         </View>
-        <TouchableOpacity onPress={() => navigation.navigate("Profile")}>
-          <View style={styles.avatarSmall}>
-            <Text style={styles.avatarSmallText}>{user?.name?.charAt(0).toUpperCase()}</Text>
-          </View>
-        </TouchableOpacity>
+        <AvatarSmall user={user} onPress={() => navigation.navigate("Profile")} />
       </View>
 
-      {/* Balance Card */}
       <View style={styles.balanceCard}>
         <Text style={styles.balanceLabel}>Current Balance</Text>
         <Text style={[styles.balanceAmount, { color: balance >= 0 ? "#fff" : "#fca5a5" }]}>
@@ -102,18 +113,17 @@ export default function DashboardScreen({ navigation }) {
         </Text>
         <View style={styles.balanceRow}>
           <View style={styles.balanceItem}>
-            <Text style={styles.balanceItemLabel}>? Income</Text>
+            <Text style={styles.balanceItemLabel}>Income</Text>
             <Text style={styles.balanceItemValue}>Tk {income.toFixed(0)}</Text>
           </View>
           <View style={styles.balanceDivider} />
           <View style={styles.balanceItem}>
-            <Text style={styles.balanceItemLabel}>? Expense</Text>
+            <Text style={styles.balanceItemLabel}>Expense</Text>
             <Text style={styles.balanceItemValue}>Tk {expense.toFixed(0)}</Text>
           </View>
         </View>
       </View>
 
-      {/* Chart */}
       <View style={styles.chartCard}>
         <Text style={styles.chartTitle}>This Month Overview</Text>
         <PieChart
@@ -129,7 +139,6 @@ export default function DashboardScreen({ navigation }) {
         />
       </View>
 
-      {/* Quick Action Buttons */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Quick Actions</Text>
       </View>
@@ -143,7 +152,6 @@ export default function DashboardScreen({ navigation }) {
         ))}
       </View>
 
-      {/* Recent Transactions */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Recent Transactions</Text>
         <TouchableOpacity onPress={() => navigation.navigate("ExpenseList")}>
@@ -166,7 +174,7 @@ export default function DashboardScreen({ navigation }) {
               activeOpacity={0.7}>
               <View style={[styles.txIcon, { backgroundColor: item.category?.color || "#6366F1" }]}>
                 <Text style={styles.txIconText}>
-                  {item.category?.icon || item.category?.name?.charAt(0) || "?"}
+                  {item.category?.name?.charAt(0)?.toUpperCase() || "?"}
                 </Text>
               </View>
               <View style={styles.txInfo}>
@@ -193,6 +201,7 @@ const styles = StyleSheet.create({
   subGreeting:        { fontSize: 13, color: "#6b7280", marginTop: 2 },
   avatarSmall:        { width: 44, height: 44, borderRadius: 22, backgroundColor: "#6366F1", justifyContent: "center", alignItems: "center", elevation: 3 },
   avatarSmallText:    { fontSize: 20, fontWeight: "bold", color: "#fff" },
+  avatarSmallImg:     { width: 44, height: 44, borderRadius: 22, elevation: 3 },
   balanceCard:        { backgroundColor: "#6366F1", marginHorizontal: 16, borderRadius: 20, padding: 20, marginBottom: 12, elevation: 4, shadowColor: "#6366F1", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 10 },
   balanceLabel:       { color: "rgba(255,255,255,0.8)", fontSize: 13, marginBottom: 4 },
   balanceAmount:      { fontSize: 36, fontWeight: "bold", color: "#fff", marginBottom: 16 },
@@ -210,6 +219,7 @@ const styles = StyleSheet.create({
   gridItem:           { alignItems: "center", width: (screenWidth - 80) / 4, paddingVertical: 4 },
   gridIcon:           { width: 58, height: 58, borderRadius: 29, justifyContent: "center", alignItems: "center", marginBottom: 6, elevation: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 4 },
   gridIconText:       { fontSize: 22, fontWeight: "bold", color: "#fff" },
+  gridIconTextSm:     { fontSize: 14, fontWeight: "bold", color: "#fff", letterSpacing: 1 },
   gridLabel:          { fontSize: 11, color: "#374151", textAlign: "center", fontWeight: "500" },
   recentCard:         { backgroundColor: "#fff", marginHorizontal: 16, borderRadius: 20, overflow: "hidden", elevation: 2 },
   emptyBox:           { padding: 32, alignItems: "center" },
@@ -218,7 +228,7 @@ const styles = StyleSheet.create({
   txRow:              { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14 },
   txBorder:           { borderBottomWidth: 1, borderBottomColor: "#f3f4f6" },
   txIcon:             { width: 42, height: 42, borderRadius: 21, justifyContent: "center", alignItems: "center", marginRight: 12 },
-  txIconText:         { fontSize: 18 },
+  txIconText:         { fontSize: 16, fontWeight: "bold", color: "#fff" },
   txInfo:             { flex: 1 },
   txNote:             { fontSize: 14, color: "#1f2937", fontWeight: "500" },
   txDate:             { fontSize: 12, color: "#9ca3af", marginTop: 2 },
