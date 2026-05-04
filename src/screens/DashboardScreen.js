@@ -81,13 +81,13 @@ export default function DashboardScreen({ navigation }) {
   ];
 
   const buttons = [
-    { label: "Income",    icon: "+",  color: "#10B981", screen: "AddExpense", params: { defaultType: "income" } },
-    { label: "Expense",   icon: "-",  color: "#EF4444", screen: "AddExpense", params: { defaultType: "expense" } },
-    { label: "AI Entry",  icon: "AI", color: "#6366F1", screen: "AI" },
-    { label: "History",   icon: "=",  color: "#06B6D4", screen: "ExpenseList" },
-    { label: "Budget",    icon: "B",  color: "#F59E0B", screen: "Budget" },
-    { label: "Analytics", icon: "A",  color: "#8B5CF6", screen: "Analytics" },
-    { label: "Category",  icon: "C",  color: "#EC4899", screen: "Categories" },
+    { label: "Income",    icon: "\u2795", color: "#10B981", screen: "AddExpense", params: { defaultType: "income" } },
+    { label: "Expense",   icon: "\u2796", color: "#EF4444", screen: "AddExpense", params: { defaultType: "expense" } },
+    { label: "AI Entry",  icon: "\ud83e\udd16", color: "#6366F1", screen: "\ud83e\udd16" },
+    { label: "History",   icon: "\ud83d\udcca", color: "#06B6D4", screen: "ExpenseList" },
+    { label: "Budget",    icon: "\ud83d\udcb0", color: "#F59E0B", screen: "Budget" },
+    { label: "Analytics", icon: "\ud83d\udcc8", color: "#8B5CF6", screen: "Analytics" },
+    { label: "Category",  icon: "\ud83c\udff7", color: "#EC4899", screen: "Categories" },
     { label: "Profile",   icon: user?.name?.charAt(0).toUpperCase() || "P", color: "#84CC16", screen: "Profile" },
   ];
 
@@ -170,8 +170,8 @@ export default function DashboardScreen({ navigation }) {
               style={[styles.txRow, index < recent.length - 1 && styles.txBorder]}
               onPress={() => navigation.navigate("EditExpense", { expense: item })}
               activeOpacity={0.7}>
-              <View style={[styles.txIcon, { backgroundColor: item.category?.color || "#6366F1" }]}>
-                <Text style={styles.txIconText}>{item.category?.name?.charAt(0)?.toUpperCase() || "?"}</Text>
+              <View style={[styles.txIcon, { backgroundColor: item.category_detail?.color || "#6366F1" }]}>
+                <Text style={styles.txIconText}>{item.category_detail?.icon || item.category_detail?.name?.charAt(0)?.toUpperCase() || item.note?.charAt(0)?.toUpperCase() || item.type === "income" ? "+" : "-"}</Text>
               </View>
               <View style={styles.txInfo}>
                 <Text style={styles.txNote} numberOfLines={1}>{item.note || item.category?.name || "Expense"}</Text>
@@ -229,4 +229,9 @@ const styles = StyleSheet.create({
   txDate:          { fontSize: 12, color: "#9ca3af", marginTop: 2 },
   txAmount:        { fontSize: 15, fontWeight: "bold" },
 });
+
+
+
+
+
 

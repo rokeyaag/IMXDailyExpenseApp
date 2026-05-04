@@ -32,8 +32,10 @@ export const expenseAPI = {
 };
 
 export const categoryAPI = {
-  list:   () => api.get("/api/categories/"),
-  create: (data) => api.post("/api/categories/", data),
+  list:   ()         => api.get("/api/categories/"),
+  create: (data)     => api.post("/api/categories/", data),
+  update: (id, data) => api.put(`/api/categories/${id}/`, data),
+  delete: (id)       => api.delete(`/api/categories/${id}/`),
 };
 
 export const analyticsAPI = {
@@ -42,3 +44,4 @@ export const analyticsAPI = {
 };
 
 export default api;
+

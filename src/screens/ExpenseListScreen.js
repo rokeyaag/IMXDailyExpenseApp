@@ -72,10 +72,10 @@ export default function ExpenseListScreen({ navigation }) {
         {item.type === "income" ? "+" : "-"}Tk {parseFloat(item.amount).toFixed(0)}
       </Text>
       <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate("EditExpense", { expense: item })}>
-        <Text style={styles.editBtnText}>??</Text>
+        <Text style={styles.editBtnText}>Edit</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(item.id)}>
-        <Text style={styles.deleteBtnText}>??</Text>
+        <Text style={styles.deleteBtnText}>Del</Text>
       </TouchableOpacity>
     </View>
   );
@@ -163,3 +163,4 @@ const styles = StyleSheet.create({
   fab:                  { position: "absolute", bottom: 24, right: 24, width: 56, height: 56, borderRadius: 28, backgroundColor: "#6366F1", justifyContent: "center", alignItems: "center", elevation: 5 },
   fabText:              { color: "#fff", fontSize: 28, fontWeight: "bold" },
 });
+
