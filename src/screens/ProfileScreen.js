@@ -4,7 +4,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 
-const BASE_URL = "https://ecommerce-api-production-3e99.up.railway.app";
+const BASE_URL = "https://imx-daily-expense-backend-production-f3cf.up.railway.app";
 
 export default function ProfileScreen({ navigation }) {
   const { user, logout, setUser } = useAuth();
@@ -17,7 +17,8 @@ export default function ProfileScreen({ navigation }) {
 
   const getAvatarUri = (av) => {
     if (!av) return null;
-    if (av.startsWith("http")) return av;
+    if (av.startsWith("https")) return av;
+    if (av.startsWith("http://")) return av.replace("http://", "https://");
     return `${BASE_URL}${av}`;
   };
 
@@ -210,3 +211,6 @@ const styles = StyleSheet.create({
   logoutBtn:          { margin: 16, backgroundColor: "#EF4444", borderRadius: 12, padding: 16, alignItems: "center" },
   logoutBtnText:      { color: "#fff", fontWeight: "bold", fontSize: 16 },
 });
+
+
+

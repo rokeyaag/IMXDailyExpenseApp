@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { expenseAPI, authAPI } from "../services/api";
 
 const screenWidth = Dimensions.get("window").width;
-const BASE_URL = "https://ecommerce-api-production-3e99.up.railway.app";
+const BASE_URL = "https://imx-daily-expense-backend-production-f3cf.up.railway.app";
 
 function AnimatedGridBtn({ btn, onPress }) {
   const scale = useRef(new Animated.Value(1)).current;
@@ -229,6 +229,8 @@ const styles = StyleSheet.create({
   txDate:          { fontSize: 12, color: "#9ca3af", marginTop: 2 },
   txAmount:        { fontSize: 15, fontWeight: "bold" },
 });
+
+
 
 
 

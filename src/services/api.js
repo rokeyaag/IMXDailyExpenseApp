@@ -1,7 +1,7 @@
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const BASE_URL = "https://imx-daily-expense-backend-production.up.railway.app";
+const BASE_URL = "https://imx-daily-expense-backend-production-f3cf.up.railway.app";
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -44,4 +44,6 @@ export const analyticsAPI = {
 };
 
 export default api;
+
+
 
