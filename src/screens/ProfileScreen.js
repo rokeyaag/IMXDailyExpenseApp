@@ -5,6 +5,8 @@ import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 
 const BASE_URL = "https://imx-daily-expense-backend-production-f3cf.up.railway.app";
+const CLOUDINARY_CLOUD = "dr7c7wxaw";
+const CLOUDINARY_PRESET = "dv1zh1rc";
 
 export default function ProfileScreen({ navigation }) {
   const { user, logout, setUser } = useAuth();
@@ -17,8 +19,8 @@ export default function ProfileScreen({ navigation }) {
 
   const getAvatarUri = (av) => {
     if (!av) return null;
-    if (av.startsWith("https")) return av;
-    if (av.startsWith("http://")) return av.replace("http://", "https://");
+    if (av.startsWith("https://res.cloudinary")) return av;
+    if (av.startsWith("http")) return av.replace("http://", "https://");
     return `${BASE_URL}${av}`;
   };
 
@@ -31,7 +33,7 @@ export default function ProfileScreen({ navigation }) {
       aspect: [1, 1],
       quality: 0.7,
     });
-    if (!result.canceled) { uploadPhoto(result.assets[0]); }
+    if (!result.canceled) { uploadToCloudinary(result.assets[0]); }
   };
 
   const handleTakePhoto = async () => {
@@ -42,28 +44,37 @@ export default function ProfileScreen({ navigation }) {
       aspect: [1, 1],
       quality: 0.7,
     });
-    if (!result.canceled) { uploadPhoto(result.assets[0]); }
+    if (!result.canceled) { uploadToCloudinary(result.assets[0]); }
   };
 
-  const uploadPhoto = async (asset) => {
+  const uploadToCloudinary = async (asset) => {
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append("avatar", {
+      formData.append("file", {
         uri: asset.uri,
         type: asset.mimeType || "image/jpeg",
         name: "avatar.jpg",
       });
-      const res = await api.patch("/api/auth/profile/", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      const newAvatar = res.data.avatar;
-      setPhoto(newAvatar);
-      if (setUser) setUser({ ...user, ...res.data });
-      Alert.alert("Success", "Photo updated!");
+      formData.append("upload_preset", CLOUDINARY_PRESET);
+      formData.append("folder", "avatars");
+
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`,
+        { method: "POST", body: formData }
+      );
+      const data = await res.json();
+      if (data.secure_url) {
+        const cloudinaryUrl = data.secure_url;
+        setPhoto(cloudinaryUrl);
+        await api.patch("/api/auth/profile/", { avatar_url: cloudinaryUrl });
+        if (setUser) setUser({ ...user, avatar: cloudinaryUrl });
+        Alert.alert("Success", "Photo updated!");
+      } else {
+        Alert.alert("Error", "Upload failed: " + JSON.stringify(data));
+      }
     } catch (e) {
-      console.log("Upload error:", e.response?.data || e.message);
-      Alert.alert("Error", "Failed to upload photo");
+      Alert.alert("Error", e.message);
     } finally {
       setUploading(false);
     }
@@ -106,10 +117,7 @@ export default function ProfileScreen({ navigation }) {
             <Image
               source={{ uri: avatarUri }}
               style={styles.avatarImage}
-              onError={(e) => {
-                console.log("Image load error:", e.nativeEvent.error);
-                setPhoto(null);
-              }}
+              onError={() => setPhoto(null)}
             />
           ) : (
             <View style={styles.avatar}>
@@ -173,7 +181,6 @@ export default function ProfileScreen({ navigation }) {
       <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
         <Text style={styles.logoutBtnText}>Logout</Text>
       </TouchableOpacity>
-
       <View style={{ height: 40 }} />
     </ScrollView>
   );
@@ -211,6 +218,3 @@ const styles = StyleSheet.create({
   logoutBtn:          { margin: 16, backgroundColor: "#EF4444", borderRadius: 12, padding: 16, alignItems: "center" },
   logoutBtnText:      { color: "#fff", fontWeight: "bold", fontSize: 16 },
 });
-
-
-
