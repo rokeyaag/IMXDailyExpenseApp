@@ -10,6 +10,8 @@ import AddExpenseScreen from "../screens/AddExpenseScreen";
 import EditExpenseScreen from "../screens/EditExpenseScreen";
 import AIScreen from "../screens/AIScreen";
 import AIChatScreen from "../screens/AIChatScreen";
+import SettingsScreen from "../screens/SettingsScreen";
+import PinLockScreen from "../screens/PinLockScreen";
 import BudgetScreen from "../screens/BudgetScreen";
 import AnalyticsScreen from "../screens/AnalyticsScreen";
 import ProfileScreen from "../screens/ProfileScreen";
@@ -39,6 +41,7 @@ export default function AppNavigator() {
             <Stack.Screen name="EditExpense" component={EditExpenseScreen} options={{ headerShown: true, title: "Edit Transaction" }} />
             <Stack.Screen name="AI" component={AIScreen} options={{ headerShown: true, title: "AI Entry" }} />
             <Stack.Screen name="AIChat" component={AIChatScreen} options={{ headerShown: true, title: "AI Assistant" }} />
+            <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: true, title: "Settings" }} />
             <Stack.Screen name="Budget" component={BudgetScreen} options={{ headerShown: true, title: "Budget" }} />
             <Stack.Screen name="Analytics" component={AnalyticsScreen} options={{ headerShown: true, title: "Analytics" }} />
             <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: true, title: "Profile" }} />
@@ -55,4 +58,5 @@ export default function AppNavigator() {
     </NavigationContainer>
   );
 }
+
 
