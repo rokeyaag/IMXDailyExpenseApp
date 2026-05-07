@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { PieChart } from "react-native-chart-kit";
 import { useAuth } from "../context/AuthContext";
 import { expenseAPI, authAPI } from "../services/api";
+import { scheduleMontlyBudgetAlert } from "../services/notifications";
 
 const screenWidth = Dimensions.get("window").width;
 const BASE_URL = "https://imx-daily-expense-backend-production-f3cf.up.railway.app";
@@ -60,6 +61,15 @@ export default function DashboardScreen({ navigation }) {
       setSummary(sumRes.data);
       setRecent(expRes.data.results || expRes.data);
       if (setUser) setUser(profileRes.data);
+      try {
+        const budgetRes = await expenseAPI.list({ type: "budget" });
+        const budgets = budgetRes?.data?.results || budgetRes?.data || [];
+        if (budgets.length > 0) {
+          const totalBudget = budgets.reduce((sum, b) => sum + parseFloat(b.amount), 0);
+          const totalExp = parseFloat(sumRes.data?.total_expense || 0);
+          await scheduleMontlyBudgetAlert(totalExp, totalBudget);
+        }
+      } catch {}
     } catch (e) { console.log(e); }
     finally { setLoading(false); setRefreshing(false); }
   };
@@ -83,7 +93,8 @@ export default function DashboardScreen({ navigation }) {
   const buttons = [
     { label: "Income",    icon: "\u2795", color: "#10B981", screen: "AddExpense", params: { defaultType: "income" } },
     { label: "Expense",   icon: "\u2796", color: "#EF4444", screen: "AddExpense", params: { defaultType: "expense" } },
-    { label: "AI Entry",  icon: "\ud83e\udd16", color: "#6366F1", screen: "\ud83e\udd16" },
+    { label: "AI Entry",  icon: "\ud83e\udd16", color: "#6366F1", screen: "AI" },
+    { label: "AI Chat",   icon: "\ud83d\udcac", color: "#8B5CF6", screen: "AIChat" },
     { label: "History",   icon: "\ud83d\udcca", color: "#06B6D4", screen: "ExpenseList" },
     { label: "Budget",    icon: "\ud83d\udcb0", color: "#F59E0B", screen: "Budget" },
     { label: "Analytics", icon: "\ud83d\udcc8", color: "#8B5CF6", screen: "Analytics" },
@@ -229,6 +240,9 @@ const styles = StyleSheet.create({
   txDate:          { fontSize: 12, color: "#9ca3af", marginTop: 2 },
   txAmount:        { fontSize: 15, fontWeight: "bold" },
 });
+
+
+
 
 
 

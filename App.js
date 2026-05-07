@@ -1,9 +1,10 @@
 import "react-native-gesture-handler";
-import React from "react";
+import React, { useEffect } from "react";
 import { Text, TextInput } from "react-native";
 import { useFonts, NotoSansBengali_400Regular, NotoSansBengali_700Bold } from "@expo-google-fonts/noto-sans-bengali";
 import { ActivityIndicator, View } from "react-native";
 import { AuthProvider } from "./src/context/AuthContext";
+import { registerForPushNotifications } from "./src/services/notifications";
 import AppNavigator from "./src/navigation/AppNavigator";
 
 const oldTextRender = Text.render;
@@ -28,9 +29,14 @@ export default function App() {
     );
   }
 
+  useEffect(() => {
+    registerForPushNotifications();
+  }, []);
+
   return (
     <AuthProvider>
       <AppNavigator />
     </AuthProvider>
   );
 }
+
