@@ -101,6 +101,7 @@ export default function DashboardScreen({ navigation }) {
     { label: "Category",  icon: "\ud83c\udff7", color: "#EC4899", screen: "Categories" },
     { label: "Profile",   icon: user?.name?.charAt(0).toUpperCase() || "P", color: "#84CC16", screen: "Profile" },
     { label: "Settings",  icon: "\u2699", color: "#6b7280", screen: "Settings" },
+    { label: "Scanner",   icon: "\ud83e\udde7", color: "#F97316", screen: "ReceiptScanner" },
   ];
 
   const getTypeColor = (type) => type === "income" ? "#10B981" : "#EF4444";
@@ -241,6 +242,7 @@ const styles = StyleSheet.create({
   txDate:          { fontSize: 12, color: "#9ca3af", marginTop: 2 },
   txAmount:        { fontSize: 15, fontWeight: "bold" },
 });
+
 
 
 

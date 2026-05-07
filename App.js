@@ -1,5 +1,6 @@
 import "react-native-gesture-handler";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
+import { AppState } from "react-native";
 import { Text, TextInput } from "react-native";
 import { useFonts, NotoSansBengali_400Regular, NotoSansBengali_700Bold } from "@expo-google-fonts/noto-sans-bengali";
 import { ActivityIndicator, View } from "react-native";
@@ -24,10 +25,18 @@ export default function App() {
   });
   const [locked, setLocked] = useState(false);
   const [pinChecked, setPinChecked] = useState(false);
+  const appState = useRef(AppState.currentState);
 
   useEffect(() => {
     registerForPushNotifications();
     checkPin();
+    const sub = AppState.addEventListener("change", nextState => {
+      if (appState.current.match(/inactive|background/) && nextState === "active") {
+        checkPin();
+      }
+      appState.current = nextState;
+    });
+    return () => sub.remove();
   }, []);
 
   const checkPin = async () => {
@@ -54,3 +63,5 @@ export default function App() {
     </AuthProvider>
   );
 }
+
+
