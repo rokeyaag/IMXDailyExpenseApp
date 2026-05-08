@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Switch, Alert, TextInput, ScrollView } from "react-native";
 import { savePin, getPin, deletePin, isBiometricAvailable } from "../services/security";
+import api from "../services/api";
 
 export default function SettingsScreen({ navigation }) {
   const [pinEnabled, setPinEnabled] = useState(false);
@@ -32,6 +33,25 @@ export default function SettingsScreen({ navigation }) {
         }},
       ]);
     }
+  };
+
+  const handleClearData = async () => {
+    Alert.alert(
+      "Clear All Data",
+      "This will delete ALL expenses, categories and budgets. This cannot be undone!",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Clear All", style: "destructive", onPress: async () => {
+          try {
+            await api.delete("/api/expenses/clear_all/");
+            await deletePin();
+            Alert.alert("Done", "All data has been cleared!");
+          } catch (e) {
+            Alert.alert("Error", "Something went wrong");
+          }
+        }},
+      ]
+    );
   };
 
   const handleSavePin = async () => {
@@ -119,6 +139,17 @@ export default function SettingsScreen({ navigation }) {
         </View>
       )}
 
+      <Text style={styles.sectionTitle}>Data Management</Text>
+      <View style={styles.card}>
+        <TouchableOpacity style={styles.row} onPress={handleClearData}>
+          <View>
+            <Text style={[styles.rowTitle, { color: "#EF4444" }]}>Clear All Data</Text>
+            <Text style={styles.rowSubtitle}>Delete all expenses, categories and budgets</Text>
+          </View>
+          <Text style={[styles.arrow, { color: "#EF4444" }]}>›</Text>
+        </TouchableOpacity>
+      </View>
+
       <Text style={styles.sectionTitle}>About</Text>
       <View style={styles.card}>
         <View style={styles.row}>
@@ -155,3 +186,5 @@ const styles = StyleSheet.create({
   saveBtn:      { flex: 1, backgroundColor: "#6366F1", borderRadius: 12, padding: 14, alignItems: "center" },
   saveBtnText:  { color: "#fff", fontWeight: "bold" },
 });
+
+
