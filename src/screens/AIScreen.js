@@ -44,7 +44,7 @@ export default function AIScreen({ navigation }) {
       setText("");
       setPreview(null);
       cardAnim.setValue(0);
-      setTimeout(() => navigation.navigate("Dashboard"), 2000);
+      setTimeout(() => { navigation.navigate("Dashboard", { refresh: Date.now() }); }, 2000);
     } catch (e) {
       showToast("Failed to save", "error");
     } finally {
@@ -195,3 +195,4 @@ const styles = StyleSheet.create({
   confirmBtn:        { flex: 2, borderRadius: 12, padding: 14, alignItems: "center", elevation: 3 },
   confirmBtnText:    { color: "#fff", fontWeight: "bold", fontSize: 15 },
 });
+

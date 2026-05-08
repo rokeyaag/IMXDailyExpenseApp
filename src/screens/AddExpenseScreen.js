@@ -32,7 +32,7 @@ export default function AddExpenseScreen({ navigation, route }) {
       const dateStr = date.toISOString().split("T")[0];
       await expenseAPI.create({ type, amount, note, date: dateStr, category: selectedCategory?.id || null });
       showToast("Transaction added successfully!");
-      setTimeout(() => navigation.goBack(), 2000);
+      setTimeout(() => { navigation.navigate("Dashboard", { refresh: Date.now() }); }, 2000);
     } catch (e) { showToast("Something went wrong", "error"); }
     finally { setLoading(false); }
   };
@@ -197,3 +197,4 @@ const styles = StyleSheet.create({
   saveBtn:              { borderRadius: 12, padding: 16, alignItems: "center", marginBottom: 40, elevation: 3 },
   saveBtnText:          { color: "#fff", fontSize: 16, fontWeight: "bold" },
 });
+

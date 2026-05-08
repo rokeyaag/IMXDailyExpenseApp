@@ -50,6 +50,10 @@ export default function DashboardScreen({ navigation }) {
   const monthName = today.toLocaleString("en", { month: "long" });
 
   useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => { fetchData(); });
+    return unsubscribe;
+  }, [navigation]);
 
   const fetchData = async () => {
     try {
@@ -243,6 +247,7 @@ const styles = StyleSheet.create({
   txDate:          { fontSize: 12, color: "#9ca3af", marginTop: 2 },
   txAmount:        { fontSize: 15, fontWeight: "bold" },
 });
+
 
 
 
