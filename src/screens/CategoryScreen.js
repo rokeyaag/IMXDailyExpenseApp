@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, ScrollView, Animated, Dimensions, Modal } from "react-native";
 import { categoryAPI } from "../services/api";
+import Toast from "../components/Toast";
 
 const screenWidth = Dimensions.get("window").width;
 const COLORS = ["#6366F1","#10B981","#F59E0B","#EF4444","#8B5CF6","#06B6D4","#EC4899","#84CC16","#F97316","#14B8A6"];
@@ -45,6 +46,8 @@ export default function CategoryScreen({ navigation }) {
   const [editColor, setEditColor] = useState("#6366F1");
   const [editIcon, setEditIcon] = useState(ICONS[0]);
   const [editSaving, setEditSaving] = useState(false);
+  const [toast, setToast] = useState({ visible: false, message: "", type: "success" });
+  const showToast = (message, type = "success") => setToast({ visible: true, message, type });
 
   useEffect(() => { fetchCategories(); }, []);
 
@@ -61,7 +64,7 @@ export default function CategoryScreen({ navigation }) {
     setSaving(true);
     try {
       await categoryAPI.create({ name, color: selectedColor, icon: selectedIcon.short });
-      Alert.alert("Success", "Category added!");
+      showToast("Category added!");
       setShowAdd(false);
       setName("");
       setSelectedIcon(ICONS[0]);
@@ -87,7 +90,7 @@ export default function CategoryScreen({ navigation }) {
     setEditSaving(true);
     try {
       await categoryAPI.update(editCat.id, { name: editName, color: editColor, icon: editIcon.short });
-      Alert.alert("Success", "Category updated!");
+      showToast("Category updated!");
       setShowEditModal(false);
       fetchCategories();
     } catch (e) {
@@ -120,7 +123,9 @@ export default function CategoryScreen({ navigation }) {
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color="#6366F1" />;
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <View style={{ flex: 1 }}>
+      <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={() => setToast({ ...toast, visible: false })} />
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <Text style={styles.title}>Categories</Text>
         <AnimatedBtn
@@ -253,6 +258,7 @@ export default function CategoryScreen({ navigation }) {
 
       <View style={{ height: 40 }} />
     </ScrollView>
+    </View>
   );
 }
 
@@ -298,3 +304,6 @@ const styles = StyleSheet.create({
   modalTitle:       { fontSize: 18, fontWeight: "bold", color: "#1f2937" },
   modalClose:       { fontSize: 18, color: "#6b7280", fontWeight: "bold" },
 });
+
+
+
