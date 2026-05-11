@@ -4,17 +4,17 @@ import api from "../services/api";
 
 export default function AIChatScreen() {
   const [messages, setMessages] = useState([
-    { id: "1", role: "ai", text: "Hello! I am your personal finance assistant. Ask me anything about your expenses, income, or budget!" }
+    { id: "1", role: "ai", text: "?????????????????! ??? ????? ????????? ???? ??????? ????? ???, ??? ?? ????? ???????? ?????? ?????? ????!" }
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const flatListRef = useRef(null);
 
   const quickQuestions = [
-    "This month total expense?",
-    "What is my balance?",
-    "Which category most expense?",
-    "Give me savings tips",
+    "?? ???? ?? ??? ???????",
+    "???? balance ???",
+    "??? category ?? ???? ????",
+    "????? savings tips ???",
   ];
 
   const sendMessage = async (text) => {
@@ -22,14 +22,22 @@ export default function AIChatScreen() {
     if (!msg) return;
     setInput("");
     const userMsg = { id: Date.now().toString(), role: "user", text: msg };
-    setMessages(prev => [...prev, userMsg]);
+    const updatedMessages = [...messages, userMsg];
+    setMessages(updatedMessages);
     setLoading(true);
     try {
-      const res = await api.post("/api/ai/add-expense/", { text: msg, action: "chat" });
+      const history = updatedMessages
+        .filter(m => m.id !== "1")
+        .map(m => ({ role: m.role === "user" ? "user" : "assistant", content: m.text }));
+      const res = await api.post("/api/ai/add-expense/", {
+        text: msg,
+        action: "chat",
+        history: history,
+      });
       const aiMsg = { id: (Date.now() + 1).toString(), role: "ai", text: res.data.reply };
       setMessages(prev => [...prev, aiMsg]);
     } catch (e) {
-      const errMsg = { id: (Date.now() + 1).toString(), role: "ai", text: "Sorry, something went wrong. Please try again." };
+      const errMsg = { id: (Date.now() + 1).toString(), role: "ai", text: "??????, ???? ???? ?????? ??????? ???? ?????? ?????" };
       setMessages(prev => [...prev, errMsg]);
     } finally {
       setLoading(false);
@@ -59,7 +67,6 @@ export default function AIChatScreen() {
         style={styles.inner}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 100}>
-
         <FlatList
           ref={flatListRef}
           data={messages}
@@ -77,7 +84,6 @@ export default function AIChatScreen() {
             </View>
           ) : null}
         />
-
         <View style={styles.bottomSection}>
           <View style={styles.quickRow}>
             {quickQuestions.map((q, i) => (
@@ -86,17 +92,15 @@ export default function AIChatScreen() {
               </TouchableOpacity>
             ))}
           </View>
-
           <View style={styles.inputRow}>
             <TextInput
               style={styles.input}
-              placeholder="Ask about your finances..."
+              placeholder="????? ?? English ? ??????? ????..."
               placeholderTextColor="#9ca3af"
               value={input}
               onChangeText={setInput}
               multiline
               color="#1f2937"
-              onSubmitEditing={() => sendMessage()}
             />
             <TouchableOpacity
               style={[styles.sendBtn, (!input.trim() || loading) && { opacity: 0.5 }]}
@@ -135,5 +139,3 @@ const styles = StyleSheet.create({
   sendBtn:       { backgroundColor: "#6366F1", borderRadius: 20, paddingHorizontal: 18, paddingVertical: 10 },
   sendBtnText:   { color: "#fff", fontWeight: "bold", fontSize: 14 },
 });
-
-
