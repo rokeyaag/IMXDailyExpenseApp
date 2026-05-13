@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, ScrollView, Image } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "../context/AuthContext";
@@ -14,12 +14,38 @@ export default function ProfileScreen({ navigation }) {
   const [currency, setCurrency] = useState(user?.currency || "BDT");
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [photo, setPhoto] = useState(user?.avatar || null);
+  const [photo, setPhoto] = useState(user?.avatar || user?.avatar_url || user?.profile_photo || null);
   const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    const userPhoto = user?.avatar || user?.avatar_url || user?.profile_photo || null;
+    if (userPhoto !== photo) {
+      setPhoto(userPhoto);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      const res = await api.get("/api/auth/profile/");
+      console.log("=== Profile fetch response ===");
+      console.log(JSON.stringify(res.data, null, 2));
+      const freshPhoto = res.data?.avatar || res.data?.avatar_url || res.data?.profile_photo || null;
+      if (freshPhoto) {
+        setPhoto(freshPhoto);
+        if (setUser) setUser({ ...user, ...res.data, avatar: freshPhoto });
+      }
+    } catch (e) {
+      console.log("Profile fetch error:", e.message);
+    }
+  };
 
   const getAvatarUri = (av) => {
     if (!av) return null;
-    if (av.startsWith("https://res.cloudinary")) return av;
+    if (av.startsWith("https://res.cloudinary")) return `${av}?t=${Date.now()}`;
     if (av.startsWith("http")) return av.replace("http://", "https://");
     return `${BASE_URL}${av}`;
   };
@@ -59,21 +85,50 @@ export default function ProfileScreen({ navigation }) {
       formData.append("upload_preset", CLOUDINARY_PRESET);
       formData.append("folder", "avatars");
 
+      console.log("=== Uploading to Cloudinary ===");
       const res = await fetch(
         `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`,
         { method: "POST", body: formData }
       );
       const data = await res.json();
+      console.log("=== Cloudinary response ===");
+      console.log(JSON.stringify(data, null, 2));
+
       if (data.secure_url) {
         const cloudinaryUrl = data.secure_url;
         setPhoto(cloudinaryUrl);
-        await api.patch("/api/auth/profile/", { avatar_url: cloudinaryUrl });
-        if (setUser) setUser({ ...user, avatar: cloudinaryUrl });
+
+        console.log("=== Saving to backend ===");
+        console.log("URL:", cloudinaryUrl);
+        const backendRes = await api.patch("/api/auth/profile/", {
+          avatar_url: cloudinaryUrl,
+          avatar: cloudinaryUrl,
+          profile_photo: cloudinaryUrl,
+        });
+        console.log("=== Backend save response ===");
+        console.log(JSON.stringify(backendRes.data, null, 2));
+
+        const savedPhoto = backendRes.data?.avatar
+          || backendRes.data?.avatar_url
+          || backendRes.data?.profile_photo
+          || cloudinaryUrl;
+
+        if (setUser) {
+          setUser({
+            ...user,
+            ...backendRes.data,
+            avatar: savedPhoto,
+            avatar_url: savedPhoto,
+          });
+        }
+
+        setPhoto(savedPhoto);
         Alert.alert("Success", "Photo updated!");
       } else {
         Alert.alert("Error", "Upload failed: " + JSON.stringify(data));
       }
     } catch (e) {
+      console.log("Upload error:", e.message);
       Alert.alert("Error", e.message);
     } finally {
       setUploading(false);
@@ -117,7 +172,10 @@ export default function ProfileScreen({ navigation }) {
             <Image
               source={{ uri: avatarUri }}
               style={styles.avatarImage}
-              onError={() => setPhoto(null)}
+              onError={(e) => {
+                console.log("Image load error:", e.nativeEvent.error, "URI:", avatarUri);
+                setPhoto(null);
+              }}
             />
           ) : (
             <View style={styles.avatar}>
