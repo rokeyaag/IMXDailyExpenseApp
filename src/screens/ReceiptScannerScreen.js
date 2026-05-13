@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Image, Alert, ScrollView, TextInput } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
@@ -15,23 +15,67 @@ export default function ReceiptScannerScreen({ navigation }) {
   const showToast = (message, type = "success") => setToast({ visible: true, message, type });
 
   const pickImage = async (useCamera = false) => {
-    const permission = useCamera
-      ? await ImagePicker.requestCameraPermissionsAsync()
-      : await ImagePicker.requestMediaLibraryPermissionsAsync();
+    console.log("=== pickImage called ===");
+    console.log("useCamera:", useCamera);
 
-    if (!permission.granted) {
-      Alert.alert("Permission required", "Please allow camera/gallery access");
-      return;
-    }
+    try {
+      // Request permission
+      console.log("Requesting permission...");
+      const permission = useCamera
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    const result = useCamera
-      ? await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.8 })
-      : await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, quality: 0.8 });
+      console.log("Permission result:", JSON.stringify(permission));
 
-    if (!result.canceled) {
+      if (!permission.granted) {
+        Alert.alert(
+          "Permission Required",
+          useCamera
+            ? "Camera access is required. Please enable it in app settings."
+            : "Photo library access is required. Please enable it in app settings.",
+          [{ text: "OK" }]
+        );
+        return;
+      }
+
+      console.log("Permission granted! Launching picker...");
+
+      // Launch picker - SDK 54 compatible syntax
+      const pickerOptions = {
+        mediaTypes: ["images"],   // SDK 54: array of strings, not MediaTypeOptions
+        allowsEditing: true,
+        quality: 0.8,
+        aspect: [3, 4],
+      };
+
+      const result = useCamera
+        ? await ImagePicker.launchCameraAsync(pickerOptions)
+        : await ImagePicker.launchImageLibraryAsync(pickerOptions);
+
+      console.log("Picker result:", JSON.stringify({
+        canceled: result.canceled,
+        hasAssets: !!result.assets,
+        assetCount: result.assets?.length
+      }));
+
+      if (result.canceled) {
+        console.log("User cancelled picker");
+        return;
+      }
+
+      if (!result.assets || result.assets.length === 0) {
+        showToast("No image selected", "error");
+        return;
+      }
+
       const asset = result.assets[0];
+      console.log("Selected asset URI:", asset.uri);
       setImage(asset.uri);
       analyzeReceipt(asset.uri);
+    } catch (err) {
+      console.log("pickImage error:", err.message);
+      console.log("Stack:", err.stack);
+      Alert.alert("Error", "Could not open " + (useCamera ? "camera" : "gallery") + ": " + err.message);
     }
   };
 
@@ -39,23 +83,34 @@ export default function ReceiptScannerScreen({ navigation }) {
     setLoading(true);
     setPreview(null);
     try {
+      console.log("=== Analyzing receipt ===");
+      console.log("Resizing image...");
+
       const manipulated = await ImageManipulator.manipulateAsync(
         uri,
         [{ resize: { width: 800 } }],
         { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true }
       );
 
+      console.log("Image resized. Base64 length:", manipulated.base64?.length);
+      console.log("Sending to backend...");
+
       const res = await api.post("/api/ai/scan-receipt/", {
         image: manipulated.base64,
       });
 
+      console.log("Backend response:", JSON.stringify(res.data));
+
       if (res.data.parsed) {
         setPreview(res.data.parsed);
+        showToast("Receipt analyzed!", "success");
       } else {
         showToast("Could not read receipt. Try again.", "error");
       }
     } catch (e) {
-      showToast(e.response?.data?.error || "Something went wrong", "error");
+      console.log("analyzeReceipt error:", e.message);
+      console.log("Response data:", JSON.stringify(e.response?.data));
+      showToast(e.response?.data?.error || "Something went wrong: " + e.message, "error");
     } finally {
       setLoading(false);
     }
@@ -64,11 +119,13 @@ export default function ReceiptScannerScreen({ navigation }) {
   const handleConfirm = async () => {
     setConfirming(true);
     try {
+      console.log("Confirming receipt:", JSON.stringify(preview));
       await api.post("/api/ai/add-expense/", { text: "", action: "confirm", parsed: preview });
       showToast("Receipt saved successfully!");
-      setTimeout(() => navigation.navigate("Dashboard"), 2000);
+      setTimeout(() => navigation.navigate("Dashboard"), 1500);
     } catch (e) {
-      showToast("Failed to save", "error");
+      console.log("Confirm error:", e.message);
+      showToast("Failed to save: " + e.message, "error");
     } finally {
       setConfirming(false);
     }
@@ -90,14 +147,14 @@ export default function ReceiptScannerScreen({ navigation }) {
 
         {!image ? (
           <View style={styles.scanBox}>
-            <Text style={styles.scanIcon}>??</Text>
+            <Text style={styles.scanIcon}>📷</Text>
             <Text style={styles.scanText}>No receipt scanned yet</Text>
             <View style={styles.btnRow}>
-              <TouchableOpacity style={styles.cameraBtn} onPress={() => pickImage(true)}>
-                <Text style={styles.cameraBtnText}>?? Camera</Text>
+              <TouchableOpacity style={styles.cameraBtn} onPress={() => pickImage(true)} activeOpacity={0.7}>
+                <Text style={styles.cameraBtnText}>📸 Camera</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.galleryBtn} onPress={() => pickImage(false)}>
-                <Text style={styles.galleryBtnText}>?? Gallery</Text>
+              <TouchableOpacity style={styles.galleryBtn} onPress={() => pickImage(false)} activeOpacity={0.7}>
+                <Text style={styles.galleryBtnText}>🖼 Gallery</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -141,7 +198,7 @@ export default function ReceiptScannerScreen({ navigation }) {
               <Text style={styles.fieldLabel}>Amount (Tk)</Text>
               <TextInput
                 style={styles.editInput}
-                value={String(preview.amount)}
+                value={String(preview.amount || "")}
                 onChangeText={v => handleEdit("amount", parseFloat(v) || 0)}
                 keyboardType="numeric"
                 color="#1f2937"
@@ -150,7 +207,7 @@ export default function ReceiptScannerScreen({ navigation }) {
               <Text style={styles.fieldLabel}>Note</Text>
               <TextInput
                 style={styles.editInput}
-                value={preview.note}
+                value={preview.note || ""}
                 onChangeText={v => handleEdit("note", v)}
                 color="#1f2937"
               />
