@@ -1,0 +1,518 @@
+import React, { createContext, useContext, useState, useEffect } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const LanguageContext = createContext();
+
+const translations = {
+  en: {
+    // Common
+    loading: "Loading...",
+    save: "Save",
+    cancel: "Cancel",
+    delete: "Delete",
+    edit: "Edit",
+    close: "Close",
+    yes: "Yes",
+    no: "No",
+    ok: "OK",
+    next: "Next",
+    back: "Back",
+    error: "Error",
+    success: "Success",
+    seeAll: "See all",
+    add: "Add",
+    update: "Update",
+    confirm: "Confirm",
+    done: "Done",
+    search: "Search",
+    filter: "Filter",
+    sort: "Sort",
+    refresh: "Refresh",
+    retry: "Retry",
+    submit: "Submit",
+    apply: "Apply",
+    clear: "Clear",
+    enable: "Enable",
+    disable: "Disable",
+    active: "Active",
+    inactive: "Inactive",
+
+    // Dashboard
+    hello: "Hello",
+    currentBalance: "Current Balance",
+    income: "Income",
+    expense: "Expense",
+    balance: "Balance",
+    thisMonthOverview: "This Month Overview",
+    quickActions: "Quick Actions",
+    recentTransactions: "Recent Transactions",
+    noTransactions: "No transactions yet",
+    addFirstExpense: "Add your first expense!",
+
+    // Buttons
+    btnIncome: "Income",
+    btnExpense: "Expense",
+    btnAIEntry: "AI Entry",
+    btnAIChat: "AI Chat",
+    btnHistory: "History",
+    btnBudget: "Budget",
+    btnAnalytics: "Analytics",
+    btnCategory: "Category",
+    btnProfile: "Profile",
+    btnSettings: "Settings",
+    btnScanner: "Scanner",
+    btnPrediction: "Prediction",
+    btnReports: "Reports",
+
+    // AI Screen
+    tapToSpeak: "Tap to speak",
+    listening: "Listening...",
+    speakInEnglish: "Speak in English",
+    speakInBangla: "Speak in Bangla",
+    youSaid: "You said:",
+    liveListening: "Live listening...",
+    tapMic: "Tap the MIC",
+    reset: "Reset",
+    check: "Check",
+    type: "Type",
+    taka: "Amount",
+    what: "What",
+    category: "Category",
+    saveItNow: "Save Now",
+    speakAgain: "Speak Again",
+    sayFirst: "Please say something first",
+    somethingWrong: "Something went wrong",
+    savedSuccess: "Saved successfully!",
+    saveFailed: "Save failed, try again",
+
+    // Report Screen
+    generateReport: "Generate Report",
+    filterAndCreate: "Filter and create PDF",
+    timePeriod: "Time Period",
+    typeFilter: "Type",
+    thisMonth: "This Month",
+    lastMonth: "Last Month",
+    last7Days: "Last 7 Days",
+    last30Days: "Last 30 Days",
+    allTime: "All Time",
+    all: "All",
+    preview: "Preview",
+    transactionsFound: "transactions found",
+    moreInPDF: "more in PDF...",
+    generatePDFShare: "Generate PDF and Share",
+    pdfGenerated: "PDF generated!",
+    pdfFailed: "PDF creation failed",
+    noTxnInPeriod: "No transactions in this period",
+
+    // Settings
+    settings: "Settings",
+    security: "Security",
+    pinLock: "PIN Lock",
+    pinLockSubtitle: "Require PIN to open app",
+    biometric: "Biometric",
+    biometricSubtitle: "Use fingerprint to unlock",
+    changePin: "Change PIN",
+    setNewPin: "Set New PIN",
+    newPin: "New PIN (4 digits)",
+    confirmPin: "Confirm PIN",
+    savePin: "Save PIN",
+    disablePin: "Disable PIN",
+    disablePinMsg: "Are you sure you want to disable PIN lock?",
+    pinMust4: "PIN must be 4 digits",
+    pinNotMatch: "PINs do not match",
+    pinSetSuccess: "PIN set successfully!",
+    dataManagement: "Data Management",
+    clearAllData: "Clear All Data",
+    clearAllSubtitle: "Delete all expenses, categories and budgets",
+    clearAllConfirm: "This will delete ALL expenses, categories and budgets. This cannot be undone!",
+    clearAll: "Clear All",
+    dataCleared: "All data has been cleared!",
+    about: "About",
+    appVersion: "App Version",
+    developer: "Developer",
+
+    // AddExpense / EditExpense
+    newTransaction: "New Transaction",
+    editTransaction: "Edit Transaction",
+    amount: "Amount",
+    enterAmount: "Enter amount",
+    note: "Note",
+    enterNote: "Enter note",
+    date: "Date",
+    selectCategory: "Select Category",
+    transactionSaved: "Transaction saved!",
+    transactionUpdated: "Transaction updated!",
+    transactionDeleted: "Transaction deleted!",
+    deleteConfirm: "Are you sure?",
+    deleteThisTxn: "Delete this transaction?",
+    amountRequired: "Amount is required",
+
+    // ExpenseList
+    allTransactions: "All Transactions",
+    searchTransactions: "Search transactions...",
+    filterByType: "Filter by type",
+    filterByCategory: "Filter by category",
+    noResults: "No results found",
+    total: "Total",
+
+    // Profile
+    profile: "Profile",
+    name: "Name",
+    email: "Email",
+    phone: "Phone",
+    currency: "Currency",
+    changePhoto: "Change Photo",
+    updateProfile: "Update Profile",
+    profileUpdated: "Profile updated!",
+    logout: "Logout",
+    logoutConfirm: "Are you sure you want to logout?",
+
+    // Budget
+    budget: "Budget",
+    monthlyBudget: "Monthly Budget",
+    setBudget: "Set Budget",
+    budgetAmount: "Budget Amount",
+    used: "Used",
+    remaining: "Remaining",
+    overBudget: "Over budget!",
+    budgetSaved: "Budget saved!",
+    noBudgetSet: "No budget set",
+    setBudgetMsg: "Set a budget to track your spending",
+
+    // Analytics
+    analytics: "Analytics",
+    monthlyTrend: "Monthly Trend",
+    last6Months: "Last 6 Months",
+    incomeVsExpense: "Income vs Expense",
+    topCategories: "Top Categories",
+    avgDaily: "Average Daily",
+    avgMonthly: "Average Monthly",
+    highest: "Highest",
+    lowest: "Lowest",
+
+    // Category
+    categories: "Categories",
+    addCategory: "Add Category",
+    editCategory: "Edit Category",
+    categoryName: "Category Name",
+    selectIcon: "Select Icon",
+    selectColor: "Select Color",
+    categoryAdded: "Category added!",
+    categoryUpdated: "Category updated!",
+    categoryDeleted: "Category deleted!",
+    deleteCategory: "Delete Category",
+    deleteCategoryMsg: "Are you sure you want to delete this category?",
+
+    // Receipt Scanner
+    receiptScanner: "Receipt Scanner",
+    scanReceipt: "Scan Receipt",
+    takePicture: "Take Picture",
+    chooseFromGallery: "Choose from Gallery",
+    processingImage: "Processing image...",
+    scanFailed: "Could not read receipt",
+    tryAgain: "Try again",
+
+    // Budget Prediction
+    budgetPrediction: "Budget Prediction",
+    aiAdvice: "AI Advice",
+    daysPassed: "Days Passed",
+    daysRemaining: "Days Remaining",
+    predictedTotal: "Predicted Total",
+    currentSpending: "Current Spending",
+
+    // AI Chat
+    aiAssistant: "AI Assistant",
+    typeMessage: "Type a message...",
+    askMe: "Ask me anything about your finances",
+    thinking: "Thinking...",
+
+    // Language
+    language: "Language",
+    english: "English",
+    bangla: "Bangla",
+  },
+
+  bn: {
+    // Common
+    loading: "লোড হচ্ছে...",
+    save: "সংরক্ষণ",
+    cancel: "বাতিল",
+    delete: "মুছুন",
+    edit: "সম্পাদনা",
+    close: "বন্ধ",
+    yes: "হ্যাঁ",
+    no: "না",
+    ok: "ঠিক আছে",
+    next: "পরবর্তী",
+    back: "ফিরে যান",
+    error: "ত্রুটি",
+    success: "সফল",
+    seeAll: "সব দেখুন",
+    add: "যোগ করুন",
+    update: "আপডেট",
+    confirm: "নিশ্চিত করুন",
+    done: "সম্পন্ন",
+    search: "অনুসন্ধান",
+    filter: "ফিল্টার",
+    sort: "সাজান",
+    refresh: "রিফ্রেশ",
+    retry: "পুনরায় চেষ্টা",
+    submit: "জমা দিন",
+    apply: "প্রয়োগ",
+    clear: "মুছুন",
+    enable: "চালু",
+    disable: "বন্ধ",
+    active: "সক্রিয়",
+    inactive: "নিষ্ক্রিয়",
+
+    // Dashboard
+    hello: "হ্যালো",
+    currentBalance: "বর্তমান ব্যালেন্স",
+    income: "আয়",
+    expense: "খরচ",
+    balance: "ব্যালেন্স",
+    thisMonthOverview: "এই মাসের সারসংক্ষেপ",
+    quickActions: "দ্রুত কার্যাবলী",
+    recentTransactions: "সাম্প্রতিক লেনদেন",
+    noTransactions: "এখনো কোন লেনদেন নেই",
+    addFirstExpense: "প্রথম খরচ যোগ করুন!",
+
+    // Buttons
+    btnIncome: "আয়",
+    btnExpense: "খরচ",
+    btnAIEntry: "এআই এন্ট্রি",
+    btnAIChat: "এআই চ্যাট",
+    btnHistory: "ইতিহাস",
+    btnBudget: "বাজেট",
+    btnAnalytics: "বিশ্লেষণ",
+    btnCategory: "ক্যাটাগরি",
+    btnProfile: "প্রোফাইল",
+    btnSettings: "সেটিংস",
+    btnScanner: "স্ক্যানার",
+    btnPrediction: "পূর্বাভাস",
+    btnReports: "রিপোর্ট",
+
+    // AI Screen
+    tapToSpeak: "বলতে ট্যাপ করুন",
+    listening: "শুনছি...",
+    speakInEnglish: "ইংরেজিতে বলুন",
+    speakInBangla: "বাংলায় বলুন",
+    youSaid: "আপনি বলেছেন:",
+    liveListening: "লাইভ শুনছি...",
+    tapMic: "মাইক ট্যাপ করুন",
+    reset: "রিসেট",
+    check: "যাচাই করুন",
+    type: "ধরন",
+    taka: "টাকা",
+    what: "কি",
+    category: "ক্যাটাগরি",
+    saveItNow: "সংরক্ষণ করুন",
+    speakAgain: "আবার বলবো",
+    sayFirst: "আগে কিছু বলুন",
+    somethingWrong: "কিছু সমস্যা হয়েছে",
+    savedSuccess: "সংরক্ষণ হয়েছে!",
+    saveFailed: "সংরক্ষণ হয়নি, আবার চেষ্টা করুন",
+
+    // Report Screen
+    generateReport: "রিপোর্ট তৈরি করুন",
+    filterAndCreate: "ফিল্টার করে পিডিএফ বানান",
+    timePeriod: "সময়কাল",
+    typeFilter: "ধরন",
+    thisMonth: "এই মাস",
+    lastMonth: "গত মাস",
+    last7Days: "শেষ ৭ দিন",
+    last30Days: "শেষ ৩০ দিন",
+    allTime: "সব সময়",
+    all: "সব",
+    preview: "প্রিভিউ",
+    transactionsFound: "টি লেনদেন পাওয়া গেছে",
+    moreInPDF: "আরো পিডিএফ এ...",
+    generatePDFShare: "পিডিএফ তৈরি ও শেয়ার করুন",
+    pdfGenerated: "পিডিএফ তৈরি হয়েছে!",
+    pdfFailed: "পিডিএফ তৈরি ব্যর্থ",
+    noTxnInPeriod: "এই সময়ে কোন লেনদেন নেই",
+
+    // Settings
+    settings: "সেটিংস",
+    security: "নিরাপত্তা",
+    pinLock: "পিন লক",
+    pinLockSubtitle: "অ্যাপ খুলতে পিন দরকার",
+    biometric: "বায়োমেট্রিক",
+    biometricSubtitle: "ফিঙ্গারপ্রিন্ট দিয়ে আনলক করুন",
+    changePin: "পিন পরিবর্তন",
+    setNewPin: "নতুন পিন সেট করুন",
+    newPin: "নতুন পিন (৪ ডিজিট)",
+    confirmPin: "পিন নিশ্চিত করুন",
+    savePin: "পিন সংরক্ষণ",
+    disablePin: "পিন বন্ধ করুন",
+    disablePinMsg: "আপনি কি পিন লক বন্ধ করতে চান?",
+    pinMust4: "পিন অবশ্যই ৪ ডিজিটের হতে হবে",
+    pinNotMatch: "পিন মিলছে না",
+    pinSetSuccess: "পিন সফলভাবে সেট হয়েছে!",
+    dataManagement: "ডেটা ব্যবস্থাপনা",
+    clearAllData: "সব ডেটা মুছুন",
+    clearAllSubtitle: "সব খরচ, ক্যাটাগরি ও বাজেট মুছে যাবে",
+    clearAllConfirm: "এটি সব খরচ, ক্যাটাগরি ও বাজেট মুছে দিবে। এটা পুনরুদ্ধার করা যাবে না!",
+    clearAll: "সব মুছুন",
+    dataCleared: "সব ডেটা মুছে ফেলা হয়েছে!",
+    about: "অ্যাপ সম্পর্কে",
+    appVersion: "অ্যাপ ভার্সন",
+    developer: "ডেভেলপার",
+
+    // AddExpense / EditExpense
+    newTransaction: "নতুন লেনদেন",
+    editTransaction: "লেনদেন সম্পাদনা",
+    amount: "পরিমাণ",
+    enterAmount: "পরিমাণ লিখুন",
+    note: "নোট",
+    enterNote: "নোট লিখুন",
+    date: "তারিখ",
+    selectCategory: "ক্যাটাগরি নির্বাচন",
+    transactionSaved: "লেনদেন সংরক্ষিত!",
+    transactionUpdated: "লেনদেন আপডেট হয়েছে!",
+    transactionDeleted: "লেনদেন মুছে ফেলা হয়েছে!",
+    deleteConfirm: "আপনি কি নিশ্চিত?",
+    deleteThisTxn: "এই লেনদেন মুছবেন?",
+    amountRequired: "পরিমাণ আবশ্যক",
+
+    // ExpenseList
+    allTransactions: "সব লেনদেন",
+    searchTransactions: "লেনদেন অনুসন্ধান...",
+    filterByType: "ধরন অনুযায়ী ফিল্টার",
+    filterByCategory: "ক্যাটাগরি অনুযায়ী ফিল্টার",
+    noResults: "কোন ফলাফল নেই",
+    total: "মোট",
+
+    // Profile
+    profile: "প্রোফাইল",
+    name: "নাম",
+    email: "ইমেইল",
+    phone: "ফোন",
+    currency: "মুদ্রা",
+    changePhoto: "ছবি পরিবর্তন",
+    updateProfile: "প্রোফাইল আপডেট",
+    profileUpdated: "প্রোফাইল আপডেট হয়েছে!",
+    logout: "লগআউট",
+    logoutConfirm: "আপনি কি লগআউট করতে চান?",
+
+    // Budget
+    budget: "বাজেট",
+    monthlyBudget: "মাসিক বাজেট",
+    setBudget: "বাজেট সেট করুন",
+    budgetAmount: "বাজেট পরিমাণ",
+    used: "ব্যবহৃত",
+    remaining: "অবশিষ্ট",
+    overBudget: "বাজেট অতিক্রম!",
+    budgetSaved: "বাজেট সংরক্ষিত!",
+    noBudgetSet: "কোন বাজেট সেট নেই",
+    setBudgetMsg: "খরচ ট্র্যাক করতে বাজেট সেট করুন",
+
+    // Analytics
+    analytics: "বিশ্লেষণ",
+    monthlyTrend: "মাসিক ট্রেন্ড",
+    last6Months: "শেষ ৬ মাস",
+    incomeVsExpense: "আয় বনাম খরচ",
+    topCategories: "শীর্ষ ক্যাটাগরি",
+    avgDaily: "দৈনিক গড়",
+    avgMonthly: "মাসিক গড়",
+    highest: "সর্বোচ্চ",
+    lowest: "সর্বনিম্ন",
+
+    // Category
+    categories: "ক্যাটাগরি",
+    addCategory: "ক্যাটাগরি যোগ করুন",
+    editCategory: "ক্যাটাগরি সম্পাদনা",
+    categoryName: "ক্যাটাগরির নাম",
+    selectIcon: "আইকন নির্বাচন",
+    selectColor: "রং নির্বাচন",
+    categoryAdded: "ক্যাটাগরি যোগ হয়েছে!",
+    categoryUpdated: "ক্যাটাগরি আপডেট হয়েছে!",
+    categoryDeleted: "ক্যাটাগরি মুছে ফেলা হয়েছে!",
+    deleteCategory: "ক্যাটাগরি মুছুন",
+    deleteCategoryMsg: "আপনি কি এই ক্যাটাগরি মুছতে চান?",
+
+    // Receipt Scanner
+    receiptScanner: "রসিদ স্ক্যানার",
+    scanReceipt: "রসিদ স্ক্যান করুন",
+    takePicture: "ছবি তুলুন",
+    chooseFromGallery: "গ্যালারি থেকে নিন",
+    processingImage: "ছবি প্রক্রিয়াকরণ...",
+    scanFailed: "রসিদ পড়া যায়নি",
+    tryAgain: "আবার চেষ্টা করুন",
+
+    // Budget Prediction
+    budgetPrediction: "বাজেট পূর্বাভাস",
+    aiAdvice: "এআই পরামর্শ",
+    daysPassed: "দিন অতিক্রান্ত",
+    daysRemaining: "দিন বাকি",
+    predictedTotal: "প্রত্যাশিত মোট",
+    currentSpending: "বর্তমান খরচ",
+
+    // AI Chat
+    aiAssistant: "এআই সহকারী",
+    typeMessage: "মেসেজ লিখুন...",
+    askMe: "আপনার আর্থিক বিষয়ে যেকোনো প্রশ্ন করুন",
+    thinking: "চিন্তা করছি...",
+
+    // Language
+    language: "ভাষা",
+    english: "English",
+    bangla: "বাংলা",
+  },
+};
+
+const LANGUAGE_KEY = "app_language";
+
+export function LanguageProvider({ children }) {
+  const [language, setLanguageState] = useState("bn");
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    loadLanguage();
+  }, []);
+
+  const loadLanguage = async () => {
+    try {
+      const saved = await AsyncStorage.getItem(LANGUAGE_KEY);
+      if (saved === "en" || saved === "bn") {
+        setLanguageState(saved);
+      }
+    } catch (e) {
+      console.log("Language load error:", e);
+    } finally {
+      setLoaded(true);
+    }
+  };
+
+  const setLanguage = async (lang) => {
+    try {
+      await AsyncStorage.setItem(LANGUAGE_KEY, lang);
+      setLanguageState(lang);
+    } catch (e) {
+      console.log("Language save error:", e);
+    }
+  };
+
+  const toggleLanguage = () => {
+    const newLang = language === "en" ? "bn" : "en";
+    setLanguage(newLang);
+  };
+
+  const t = (key) => {
+    return translations[language]?.[key] || translations.en[key] || key;
+  };
+
+  return (
+    <LanguageContext.Provider value={{ language, setLanguage, toggleLanguage, t, loaded }}>
+      {children}
+    </LanguageContext.Provider>
+  );
+}
+
+export function useLanguage() {
+  const context = useContext(LanguageContext);
+  if (!context) {
+    throw new Error("useLanguage must be used within LanguageProvider");
+  }
+  return context;
+}

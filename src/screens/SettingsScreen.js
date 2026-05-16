@@ -2,17 +2,17 @@ import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Switch, Alert, TextInput, ScrollView } from "react-native";
 import { savePin, getPin, deletePin, isBiometricAvailable } from "../services/security";
 import api from "../services/api";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function SettingsScreen({ navigation }) {
+  const { t } = useLanguage();
   const [pinEnabled, setPinEnabled] = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [showSetPin, setShowSetPin] = useState(false);
   const [newPin, setNewPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
 
-  useEffect(() => {
-    checkSettings();
-  }, []);
+  useEffect(() => { checkSettings(); }, []);
 
   const checkSettings = async () => {
     const pin = await getPin();
@@ -22,146 +22,98 @@ export default function SettingsScreen({ navigation }) {
   };
 
   const handlePinToggle = async (value) => {
-    if (value) {
-      setShowSetPin(true);
-    } else {
-      Alert.alert("Disable PIN", "Are you sure you want to disable PIN lock?", [
-        { text: "Cancel", style: "cancel" },
-        { text: "Disable", style: "destructive", onPress: async () => {
-          await deletePin();
-          setPinEnabled(false);
-        }},
+    if (value) { setShowSetPin(true); }
+    else {
+      Alert.alert(t("disablePin"), t("disablePinMsg"), [
+        { text: t("cancel"), style: "cancel" },
+        { text: t("disable"), style: "destructive", onPress: async () => { await deletePin(); setPinEnabled(false); }},
       ]);
     }
   };
 
   const handleClearData = async () => {
-    Alert.alert(
-      "Clear All Data",
-      "This will delete ALL expenses, categories and budgets. This cannot be undone!",
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Clear All", style: "destructive", onPress: async () => {
-          try {
-            await api.delete("/api/expenses/clear_all/");
-            await deletePin();
-            Alert.alert("Done", "All data has been cleared!");
-          } catch (e) {
-            Alert.alert("Error", "Something went wrong");
-          }
-        }},
-      ]
-    );
+    Alert.alert(t("clearAllData"), t("clearAllConfirm"), [
+      { text: t("cancel"), style: "cancel" },
+      { text: t("clearAll"), style: "destructive", onPress: async () => {
+        try { await api.delete("/api/expenses/clear_all/"); await deletePin(); Alert.alert(t("done"), t("dataCleared")); }
+        catch (e) { Alert.alert(t("error"), t("somethingWrong")); }
+      }},
+    ]);
   };
 
   const handleSavePin = async () => {
-    if (newPin.length !== 4) { Alert.alert("Error", "PIN must be 4 digits"); return; }
-    if (newPin !== confirmPin) { Alert.alert("Error", "PINs do not match"); return; }
-    await savePin(newPin);
-    setPinEnabled(true);
-    setShowSetPin(false);
-    setNewPin("");
-    setConfirmPin("");
-    Alert.alert("Success", "PIN set successfully!");
+    if (newPin.length !== 4) { Alert.alert(t("error"), t("pinMust4")); return; }
+    if (newPin !== confirmPin) { Alert.alert(t("error"), t("pinNotMatch")); return; }
+    await savePin(newPin); setPinEnabled(true); setShowSetPin(false);
+    setNewPin(""); setConfirmPin("");
+    Alert.alert(t("success"), t("pinSetSuccess"));
   };
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.sectionTitle}>Security</Text>
-
+      <Text style={styles.sectionTitle}>{t("security")}</Text>
       <View style={styles.card}>
         <View style={styles.row}>
           <View>
-            <Text style={styles.rowTitle}>PIN Lock</Text>
-            <Text style={styles.rowSubtitle}>Require PIN to open app</Text>
+            <Text style={styles.rowTitle}>{t("pinLock")}</Text>
+            <Text style={styles.rowSubtitle}>{t("pinLockSubtitle")}</Text>
           </View>
-          <Switch
-            value={pinEnabled}
-            onValueChange={handlePinToggle}
-            trackColor={{ false: "#e5e7eb", true: "#6366F1" }}
-            thumbColor={pinEnabled ? "#fff" : "#f4f3f4"}
-          />
+          <Switch value={pinEnabled} onValueChange={handlePinToggle} trackColor={{ false: "#e5e7eb", true: "#6366F1" }} thumbColor={pinEnabled ? "#fff" : "#f4f3f4"} />
         </View>
-
         {biometricAvailable && pinEnabled && (
           <View style={[styles.row, styles.rowBorder]}>
             <View>
-              <Text style={styles.rowTitle}>Biometric</Text>
-              <Text style={styles.rowSubtitle}>Use fingerprint to unlock</Text>
+              <Text style={styles.rowTitle}>{t("biometric")}</Text>
+              <Text style={styles.rowSubtitle}>{t("biometricSubtitle")}</Text>
             </View>
-            <Text style={styles.badge}>Active</Text>
+            <Text style={styles.badge}>{t("active")}</Text>
           </View>
         )}
-
         {pinEnabled && (
           <TouchableOpacity style={[styles.row, styles.rowBorder]} onPress={() => setShowSetPin(true)}>
-            <Text style={styles.rowTitle}>Change PIN</Text>
-            <Text style={styles.arrow}>›</Text>
+            <Text style={styles.rowTitle}>{t("changePin")}</Text>
+            <Text style={styles.arrow}>{">"}</Text>
           </TouchableOpacity>
         )}
       </View>
-
       {showSetPin && (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Set New PIN</Text>
-          <Text style={styles.fieldLabel}>New PIN (4 digits)</Text>
-          <TextInput
-            style={styles.pinInput}
-            value={newPin}
-            onChangeText={v => setNewPin(v.replace(/[^0-9]/g, "").slice(0, 4))}
-            keyboardType="numeric"
-            secureTextEntry
-            maxLength={4}
-            placeholder="••••"
-            placeholderTextColor="#9ca3af"
-            color="#1f2937"
-          />
-          <Text style={styles.fieldLabel}>Confirm PIN</Text>
-          <TextInput
-            style={styles.pinInput}
-            value={confirmPin}
-            onChangeText={v => setConfirmPin(v.replace(/[^0-9]/g, "").slice(0, 4))}
-            keyboardType="numeric"
-            secureTextEntry
-            maxLength={4}
-            placeholder="••••"
-            placeholderTextColor="#9ca3af"
-            color="#1f2937"
-          />
+          <Text style={styles.cardTitle}>{t("setNewPin")}</Text>
+          <Text style={styles.fieldLabel}>{t("newPin")}</Text>
+          <TextInput style={styles.pinInput} value={newPin} onChangeText={v => setNewPin(v.replace(/[^0-9]/g, "").slice(0, 4))} keyboardType="numeric" secureTextEntry maxLength={4} placeholder="****" placeholderTextColor="#9ca3af" />
+          <Text style={styles.fieldLabel}>{t("confirmPin")}</Text>
+          <TextInput style={styles.pinInput} value={confirmPin} onChangeText={v => setConfirmPin(v.replace(/[^0-9]/g, "").slice(0, 4))} keyboardType="numeric" secureTextEntry maxLength={4} placeholder="****" placeholderTextColor="#9ca3af" />
           <View style={styles.btnRow}>
             <TouchableOpacity style={styles.cancelBtn} onPress={() => { setShowSetPin(false); setNewPin(""); setConfirmPin(""); }}>
-              <Text style={styles.cancelBtnText}>Cancel</Text>
+              <Text style={styles.cancelBtnText}>{t("cancel")}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.saveBtn} onPress={handleSavePin}>
-              <Text style={styles.saveBtnText}>Save PIN</Text>
+              <Text style={styles.saveBtnText}>{t("savePin")}</Text>
             </TouchableOpacity>
           </View>
         </View>
       )}
-
-      <Text style={styles.sectionTitle}>Data Management</Text>
+      <Text style={styles.sectionTitle}>{t("dataManagement")}</Text>
       <View style={styles.card}>
         <TouchableOpacity style={styles.row} onPress={handleClearData}>
           <View>
-            <Text style={[styles.rowTitle, { color: "#EF4444" }]}>Clear All Data</Text>
-            <Text style={styles.rowSubtitle}>Delete all expenses, categories and budgets</Text>
+            <Text style={[styles.rowTitle, { color: "#EF4444" }]}>{t("clearAllData")}</Text>
+            <Text style={styles.rowSubtitle}>{t("clearAllSubtitle")}</Text>
           </View>
-          <Text style={[styles.arrow, { color: "#EF4444" }]}>›</Text>
+          <Text style={[styles.arrow, { color: "#EF4444" }]}>{">"}</Text>
         </TouchableOpacity>
       </View>
-
-      <Text style={styles.sectionTitle}>About</Text>
+      <Text style={styles.sectionTitle}>{t("about")}</Text>
       <View style={styles.card}>
         <View style={styles.row}>
-          <Text style={styles.rowTitle}>App Version</Text>
+          <Text style={styles.rowTitle}>{t("appVersion")}</Text>
           <Text style={styles.rowSubtitle}>1.0.0</Text>
         </View>
         <View style={[styles.row, styles.rowBorder]}>
-          <Text style={styles.rowTitle}>Developer</Text>
+          <Text style={styles.rowTitle}>{t("developer")}</Text>
           <Text style={styles.rowSubtitle}>IMX Trading</Text>
         </View>
       </View>
-
       <View style={{ height: 40 }} />
     </ScrollView>
   );
@@ -186,5 +138,3 @@ const styles = StyleSheet.create({
   saveBtn:      { flex: 1, backgroundColor: "#6366F1", borderRadius: 12, padding: 14, alignItems: "center" },
   saveBtnText:  { color: "#fff", fontWeight: "bold" },
 });
-
-

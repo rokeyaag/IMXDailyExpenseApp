@@ -32,6 +32,7 @@ yarn-error.*
 
 # local env files
 .env*.local
+.env
 
 # typescript
 *.tsbuildinfo
@@ -39,3 +40,28 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+/android-backup-old
+
+# === Backup files (DO NOT push) ===
+*.backup
+*.backup-*
+App.js.backup
+src-backup-*/
+
+# === Build artifacts (too large for GitHub) ===
+*.apk
+*.aab
+*.zip
+
+# === Utility scripts (local only) ===
+debug-profile.ps1
+fix-app.ps1
+
+# === Build credentials ===
+*.keystore
+credentials.json
+
+# === IDE ===
+.idea/
+.vscode/
+*.swp

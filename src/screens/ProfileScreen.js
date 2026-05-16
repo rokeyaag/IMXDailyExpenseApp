@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, ScrollView, Image } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 import api from "../services/api";
 
 const BASE_URL = "https://imx-daily-expense-backend-production-f3cf.up.railway.app";
@@ -10,6 +11,7 @@ const CLOUDINARY_PRESET = "dv1zh1rc";
 
 export default function ProfileScreen({ navigation }) {
   const { user, logout, setUser } = useAuth();
+  const { t } = useLanguage();
   const [name, setName] = useState(user?.name || "");
   const [currency, setCurrency] = useState(user?.currency || "BDT");
   const [loading, setLoading] = useState(false);
@@ -19,57 +21,43 @@ export default function ProfileScreen({ navigation }) {
 
   useEffect(() => {
     const userPhoto = user?.avatar || user?.avatar_url || user?.profile_photo || null;
-    if (userPhoto !== photo) {
-      setPhoto(userPhoto);
-    }
+    if (userPhoto !== photo) { setPhoto(userPhoto); }
   }, [user]);
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
+  useEffect(() => { fetchProfile(); }, []);
 
   const fetchProfile = async () => {
     try {
       const res = await api.get("/api/auth/profile/");
-      console.log("=== Profile fetch response ===");
-      console.log(JSON.stringify(res.data, null, 2));
       const freshPhoto = res.data?.avatar || res.data?.avatar_url || res.data?.profile_photo || null;
       if (freshPhoto) {
         setPhoto(freshPhoto);
         if (setUser) setUser({ ...user, ...res.data, avatar: freshPhoto });
       }
-    } catch (e) {
-      console.log("Profile fetch error:", e.message);
-    }
+    } catch (e) { console.log("Profile fetch error:", e.message); }
   };
 
   const getAvatarUri = (av) => {
     if (!av) return null;
-    if (av.startsWith("https://res.cloudinary")) return `${av}?t=${Date.now()}`;
+    if (av.startsWith("https://res.cloudinary")) return av + "?t=" + Date.now();
     if (av.startsWith("http")) return av.replace("http://", "https://");
-    return `${BASE_URL}${av}`;
+    return BASE_URL + av;
   };
 
   const handlePickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) { Alert.alert("Permission required", "Please allow access to photos"); return; }
+    if (!permission.granted) { Alert.alert(t("error"), "Please allow access to photos"); return; }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
+      allowsEditing: true, aspect: [1, 1], quality: 0.7,
     });
     if (!result.canceled) { uploadToCloudinary(result.assets[0]); }
   };
 
   const handleTakePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) { Alert.alert("Permission required", "Please allow camera access"); return; }
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
-    });
+    if (!permission.granted) { Alert.alert(t("error"), "Please allow camera access"); return; }
+    const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [1, 1], quality: 0.7 });
     if (!result.canceled) { uploadToCloudinary(result.assets[0]); }
   };
 
@@ -77,84 +65,56 @@ export default function ProfileScreen({ navigation }) {
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append("file", {
-        uri: asset.uri,
-        type: asset.mimeType || "image/jpeg",
-        name: "avatar.jpg",
-      });
+      formData.append("file", { uri: asset.uri, type: asset.mimeType || "image/jpeg", name: "avatar.jpg" });
       formData.append("upload_preset", CLOUDINARY_PRESET);
       formData.append("folder", "avatars");
-
-      console.log("=== Uploading to Cloudinary ===");
-      const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`,
-        { method: "POST", body: formData }
-      );
+      const res = await fetch("https://api.cloudinary.com/v1_1/" + CLOUDINARY_CLOUD + "/image/upload", { method: "POST", body: formData });
       const data = await res.json();
-      console.log("=== Cloudinary response ===");
-      console.log(JSON.stringify(data, null, 2));
-
       if (data.secure_url) {
         const cloudinaryUrl = data.secure_url;
         setPhoto(cloudinaryUrl);
-
-        console.log("=== Saving to backend ===");
-        console.log("URL:", cloudinaryUrl);
-        const backendRes = await api.patch("/api/auth/profile/", {
-          avatar_url: cloudinaryUrl,
-          avatar: cloudinaryUrl,
-          profile_photo: cloudinaryUrl,
-        });
-        console.log("=== Backend save response ===");
-        console.log(JSON.stringify(backendRes.data, null, 2));
-
-        const savedPhoto = backendRes.data?.avatar
-          || backendRes.data?.avatar_url
-          || backendRes.data?.profile_photo
-          || cloudinaryUrl;
-
-        if (setUser) {
-          setUser({
-            ...user,
-            ...backendRes.data,
-            avatar: savedPhoto,
-            avatar_url: savedPhoto,
-          });
-        }
-
+        const backendRes = await api.patch("/api/auth/profile/", { avatar_url: cloudinaryUrl, avatar: cloudinaryUrl, profile_photo: cloudinaryUrl });
+        const savedPhoto = backendRes.data?.avatar || backendRes.data?.avatar_url || backendRes.data?.profile_photo || cloudinaryUrl;
+        if (setUser) { setUser({ ...user, ...backendRes.data, avatar: savedPhoto, avatar_url: savedPhoto }); }
         setPhoto(savedPhoto);
-        Alert.alert("Success", "Photo updated!");
+        Alert.alert(t("success"), "Photo updated!");
       } else {
-        Alert.alert("Error", "Upload failed: " + JSON.stringify(data));
+        Alert.alert(t("error"), "Upload failed");
       }
     } catch (e) {
-      console.log("Upload error:", e.message);
-      Alert.alert("Error", e.message);
+      Alert.alert(t("error"), e.message);
     } finally {
       setUploading(false);
     }
   };
 
   const handleUpdate = async () => {
-    if (!name.trim()) { Alert.alert("Error", "Name cannot be empty"); return; }
+    if (!name.trim()) { Alert.alert(t("error"), t("name") + " " + t("amountRequired")); return; }
     setLoading(true);
     try {
       const res = await api.patch("/api/auth/profile/", { name, currency });
       if (setUser) setUser({ ...user, ...res.data });
-      Alert.alert("Success", "Profile updated!");
+      Alert.alert(t("success"), t("profileUpdated"));
       setEditing(false);
     } catch (e) {
-      Alert.alert("Error", "Something went wrong");
+      Alert.alert(t("error"), t("somethingWrong"));
     } finally {
       setLoading(false);
     }
   };
 
   const showPhotoOptions = () => {
-    Alert.alert("Profile Photo", "Choose an option", [
-      { text: "Take Photo", onPress: handleTakePhoto },
-      { text: "Choose from Gallery", onPress: handlePickImage },
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("changePhoto"), "", [
+      { text: t("takePicture"), onPress: handleTakePhoto },
+      { text: t("chooseFromGallery"), onPress: handlePickImage },
+      { text: t("cancel"), style: "cancel" },
+    ]);
+  };
+
+  const handleLogout = () => {
+    Alert.alert(t("logout"), t("logoutConfirm"), [
+      { text: t("cancel"), style: "cancel" },
+      { text: t("logout"), style: "destructive", onPress: logout },
     ]);
   };
 
@@ -169,14 +129,7 @@ export default function ProfileScreen({ navigation }) {
               <ActivityIndicator color="#fff" size="large" />
             </View>
           ) : avatarUri ? (
-            <Image
-              source={{ uri: avatarUri }}
-              style={styles.avatarImage}
-              onError={(e) => {
-                console.log("Image load error:", e.nativeEvent.error, "URI:", avatarUri);
-                setPhoto(null);
-              }}
-            />
+            <Image source={{ uri: avatarUri }} style={styles.avatarImage} onError={() => setPhoto(null)} />
           ) : (
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>{user?.name?.charAt(0).toUpperCase()}</Text>
@@ -188,34 +141,19 @@ export default function ProfileScreen({ navigation }) {
         </TouchableOpacity>
         <Text style={styles.userName}>{user?.name}</Text>
         <Text style={styles.userEmail}>{user?.email}</Text>
-        <Text style={styles.tapHint}>Tap photo to change</Text>
+        <Text style={styles.tapHint}>{t("changePhoto")}</Text>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Account Info</Text>
-        <Text style={styles.label}>Full Name</Text>
-        <TextInput
-          style={[styles.input, !editing && styles.inputDisabled]}
-          value={name}
-          onChangeText={setName}
-          editable={editing}
-          placeholder="Your name"
-          color="#1f2937"
-        />
-        <Text style={styles.label}>Email</Text>
-        <TextInput
-          style={[styles.input, styles.inputDisabled]}
-          value={user?.email}
-          editable={false}
-          color="#9ca3af"
-        />
-        <Text style={styles.label}>Currency</Text>
+        <Text style={styles.cardTitle}>{t("profile")}</Text>
+        <Text style={styles.label}>{t("name")}</Text>
+        <TextInput style={[styles.input, !editing && styles.inputDisabled]} value={name} onChangeText={setName} editable={editing} placeholder={t("name")} placeholderTextColor="#9ca3af" />
+        <Text style={styles.label}>{t("email")}</Text>
+        <TextInput style={[styles.input, styles.inputDisabled]} value={user?.email} editable={false} />
+        <Text style={styles.label}>{t("currency")}</Text>
         <View style={styles.currencyRow}>
           {["BDT", "USD", "EUR", "GBP"].map((cur) => (
-            <TouchableOpacity
-              key={cur}
-              style={[styles.currencyBtn, currency === cur && styles.currencyBtnActive]}
-              onPress={() => editing && setCurrency(cur)}>
+            <TouchableOpacity key={cur} style={[styles.currencyBtn, currency === cur && styles.currencyBtnActive]} onPress={() => editing && setCurrency(cur)}>
               <Text style={[styles.currencyText, currency === cur && styles.currencyTextActive]}>{cur}</Text>
             </TouchableOpacity>
           ))}
@@ -223,21 +161,21 @@ export default function ProfileScreen({ navigation }) {
         {editing ? (
           <View style={styles.editBtnRow}>
             <TouchableOpacity style={styles.cancelBtn} onPress={() => { setEditing(false); setName(user?.name || ""); }}>
-              <Text style={styles.cancelBtnText}>Cancel</Text>
+              <Text style={styles.cancelBtnText}>{t("cancel")}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.saveBtn} onPress={handleUpdate} disabled={loading}>
-              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Save</Text>}
+              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>{t("save")}</Text>}
             </TouchableOpacity>
           </View>
         ) : (
           <TouchableOpacity style={styles.editBtn} onPress={() => setEditing(true)}>
-            <Text style={styles.editBtnText}>Edit Profile</Text>
+            <Text style={styles.editBtnText}>{t("updateProfile")}</Text>
           </TouchableOpacity>
         )}
       </View>
 
-      <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
-        <Text style={styles.logoutBtnText}>Logout</Text>
+      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+        <Text style={styles.logoutBtnText}>{t("logout")}</Text>
       </TouchableOpacity>
       <View style={{ height: 40 }} />
     </ScrollView>

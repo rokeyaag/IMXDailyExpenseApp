@@ -10,10 +10,14 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#6366F1"
+      "backgroundColor": "#FFFFFF"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Allow IMX Daily Expense to access microphone for voice expense entry.",
+        "NSSpeechRecognitionUsageDescription": "Allow IMX Daily Expense to recognize your voice for adding expenses."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +25,10 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.imxuser.IMXDailyExpenseApp"
+      "package": "com.imxuser.IMXDailyExpenseApp",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -35,13 +42,24 @@
           "cameraPermission": "Allow IMX Daily Expense to use your camera."
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Allow IMX Daily Expense to use the microphone for voice expense entry.",
+          "speechRecognitionPermission": "Allow IMX Daily Expense to recognize your voice for adding expenses.",
+          "androidSpeechServicePackages": [
+            "com.google.android.googlequicksearchbox"
+          ]
+        }
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "extra": {
       "eas": {
-        "projectId": "52b60af7-d0ba-424f-be4b-fe774cb7d9e4"
+        "projectId": "fc482a4d-1ed2-479e-bfe7-f847a8754e81"
       }
-    }
+    },
+    "owner": "ruku123"
   }
 }
-

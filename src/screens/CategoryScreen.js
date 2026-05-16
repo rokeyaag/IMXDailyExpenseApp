@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, ScrollView, Animated, Dimensions, Modal } from "react-native";
 import { categoryAPI } from "../services/api";
 import Toast from "../components/Toast";
+import { useLanguage } from "../context/LanguageContext";
 
 const screenWidth = Dimensions.get("window").width;
 const COLORS = ["#6366F1","#10B981","#F59E0B","#EF4444","#8B5CF6","#06B6D4","#EC4899","#84CC16","#F97316","#14B8A6"];
@@ -33,6 +34,7 @@ function AnimatedBtn({ onPress, style, children }) {
 }
 
 export default function CategoryScreen({ navigation }) {
+  const { t } = useLanguage();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -60,18 +62,18 @@ export default function CategoryScreen({ navigation }) {
   };
 
   const handleAdd = async () => {
-    if (!name.trim()) { Alert.alert("Error", "Please enter category name"); return; }
+    if (!name.trim()) { Alert.alert(t("error"), t("categoryName") + " " + t("amountRequired")); return; }
     setSaving(true);
     try {
       await categoryAPI.create({ name, color: selectedColor, icon: selectedIcon.short });
-      showToast("Category added!");
+      showToast(t("categoryAdded"));
       setShowAdd(false);
       setName("");
       setSelectedIcon(ICONS[0]);
       setSelectedColor("#6366F1");
       fetchCategories();
     } catch (e) {
-      Alert.alert("Error", "Something went wrong");
+      Alert.alert(t("error"), t("somethingWrong"));
     }
     finally { setSaving(false); }
   };
@@ -86,38 +88,27 @@ export default function CategoryScreen({ navigation }) {
   };
 
   const handleEditSave = async () => {
-    if (!editName.trim()) { Alert.alert("Error", "Name cannot be empty"); return; }
+    if (!editName.trim()) { Alert.alert(t("error"), t("amountRequired")); return; }
     setEditSaving(true);
     try {
       await categoryAPI.update(editCat.id, { name: editName, color: editColor, icon: editIcon.short });
-      showToast("Category updated!");
+      showToast(t("categoryUpdated"));
       setShowEditModal(false);
       fetchCategories();
     } catch (e) {
-      Alert.alert("Error", "Something went wrong");
+      Alert.alert(t("error"), t("somethingWrong"));
     }
     finally { setEditSaving(false); }
   };
 
   const handleDelete = (cat) => {
-    Alert.alert(
-      "Delete Category",
-      `Are you sure you want to delete "${cat.name}"?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete", style: "destructive",
-          onPress: async () => {
-            try {
-              await categoryAPI.delete(cat.id);
-              fetchCategories();
-            } catch (e) {
-              Alert.alert("Error", "Cannot delete this category");
-            }
-          }
-        }
-      ]
-    );
+    Alert.alert(t("deleteCategory"), t("deleteCategoryMsg"), [
+      { text: t("cancel"), style: "cancel" },
+      { text: t("delete"), style: "destructive", onPress: async () => {
+        try { await categoryAPI.delete(cat.id); fetchCategories(); }
+        catch (e) { Alert.alert(t("error"), t("somethingWrong")); }
+      }}
+    ]);
   };
 
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color="#6366F1" />;
@@ -126,138 +117,106 @@ export default function CategoryScreen({ navigation }) {
     <View style={{ flex: 1 }}>
       <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={() => setToast({ ...toast, visible: false })} />
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Categories</Text>
-        <AnimatedBtn
-          onPress={() => setShowAdd(!showAdd)}
-          style={[styles.addBtn, { backgroundColor: showAdd ? "#EF4444" : "#6366F1" }]}>
-          <Text style={styles.addBtnText}>{showAdd ? "X Close" : "+ Add New"}</Text>
-        </AnimatedBtn>
-      </View>
-
-      {showAdd && (
-        <View style={styles.addCard}>
-          <Text style={styles.addTitle}>New Category</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Category name"
-            placeholderTextColor="#9ca3af"
-            value={name}
-            onChangeText={setName}
-            color="#1f2937"
-          />
-          <View style={styles.previewRow}>
-            <View style={[styles.previewCircle, { backgroundColor: selectedColor }]}>
-              <Text style={styles.previewShort}>{selectedIcon.short}</Text>
-            </View>
-            <Text style={styles.previewName}>{name || "Preview"}</Text>
-          </View>
-          <Text style={styles.label}>Choose Icon</Text>
-          <View style={styles.iconGrid}>
-            {ICONS.map((item) => (
-              <TouchableOpacity
-                key={item.label}
-                style={[styles.iconBtn, selectedIcon.label === item.label && { backgroundColor: selectedColor, borderColor: selectedColor }]}
-                onPress={() => setSelectedIcon(item)}>
-                <Text style={[styles.iconShort, selectedIcon.label === item.label && { color: "#fff" }]}>{item.short}</Text>
-                <Text style={[styles.iconLabel, selectedIcon.label === item.label && { color: "#fff" }]}>{item.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <Text style={styles.label}>Choose Color</Text>
-          <View style={styles.colorGrid}>
-            {COLORS.map((color) => (
-              <TouchableOpacity
-                key={color}
-                onPress={() => setSelectedColor(color)}
-                style={[styles.colorBtn, { backgroundColor: color }, selectedColor === color && styles.colorBtnSelected]}>
-                {selectedColor === color && <Text style={styles.colorCheck}>?</Text>}
-              </TouchableOpacity>
-            ))}
-          </View>
-          <AnimatedBtn onPress={handleAdd} style={[styles.saveBtn, { backgroundColor: selectedColor }]}>
-            {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Save Category</Text>}
+        <View style={styles.header}>
+          <Text style={styles.title}>{t("categories")}</Text>
+          <AnimatedBtn onPress={() => setShowAdd(!showAdd)} style={[styles.addBtn, { backgroundColor: showAdd ? "#EF4444" : "#6366F1" }]}>
+            <Text style={styles.addBtnText}>{showAdd ? "X " + t("close") : "+ " + t("add")}</Text>
           </AnimatedBtn>
         </View>
-      )}
 
-      <Text style={styles.listTitle}>All Categories ({categories.length})</Text>
-      <View style={styles.listCard}>
-        {categories.map((cat, index) => (
-          <View key={cat.id} style={[styles.catRow, index < categories.length - 1 && styles.catBorder]}>
-            <View style={[styles.catIconBox, { backgroundColor: cat.color || "#6366F1" }]}>
-              <Text style={styles.catIconText}>{cat.icon || cat.name?.charAt(0).toUpperCase()}</Text>
+        {showAdd && (
+          <View style={styles.addCard}>
+            <Text style={styles.addTitle}>{t("addCategory")}</Text>
+            <TextInput style={styles.input} placeholder={t("categoryName")} placeholderTextColor="#9ca3af" value={name} onChangeText={setName} />
+            <View style={styles.previewRow}>
+              <View style={[styles.previewCircle, { backgroundColor: selectedColor }]}>
+                <Text style={styles.previewShort}>{selectedIcon.short}</Text>
+              </View>
+              <Text style={styles.previewName}>{name || t("preview")}</Text>
             </View>
-            <Text style={styles.catName}>{cat.name}</Text>
-            <View style={styles.catActions}>
-              <TouchableOpacity style={styles.editBtn} onPress={() => handleEditOpen(cat)}>
-                <Text style={styles.editBtnText}>Edit</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(cat)}>
-                <Text style={styles.deleteBtnText}>Del</Text>
-              </TouchableOpacity>
+            <Text style={styles.label}>{t("selectIcon")}</Text>
+            <View style={styles.iconGrid}>
+              {ICONS.map((item) => (
+                <TouchableOpacity key={item.label} style={[styles.iconBtn, selectedIcon.label === item.label && { backgroundColor: selectedColor, borderColor: selectedColor }]} onPress={() => setSelectedIcon(item)}>
+                  <Text style={[styles.iconShort, selectedIcon.label === item.label && { color: "#fff" }]}>{item.short}</Text>
+                  <Text style={[styles.iconLabel, selectedIcon.label === item.label && { color: "#fff" }]}>{item.label}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
+            <Text style={styles.label}>{t("selectColor")}</Text>
+            <View style={styles.colorGrid}>
+              {COLORS.map((color) => (
+                <TouchableOpacity key={color} onPress={() => setSelectedColor(color)} style={[styles.colorBtn, { backgroundColor: color }, selectedColor === color && styles.colorBtnSelected]} />
+              ))}
+            </View>
+            <AnimatedBtn onPress={handleAdd} style={[styles.saveBtn, { backgroundColor: selectedColor }]}>
+              {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>{t("save")}</Text>}
+            </AnimatedBtn>
           </View>
-        ))}
-      </View>
+        )}
 
-      {/* Edit Modal */}
-      <Modal visible={showEditModal} transparent animationType="slide">
-        <TouchableOpacity style={styles.modalOverlay} onPress={() => setShowEditModal(false)} activeOpacity={1}>
-          <View style={styles.modalBox}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Edit Category</Text>
-              <TouchableOpacity onPress={() => setShowEditModal(false)}>
-                <Text style={styles.modalClose}>X</Text>
-              </TouchableOpacity>
+        <Text style={styles.listTitle}>{t("categories")} ({categories.length})</Text>
+        <View style={styles.listCard}>
+          {categories.map((cat, index) => (
+            <View key={cat.id} style={[styles.catRow, index < categories.length - 1 && styles.catBorder]}>
+              <View style={[styles.catIconBox, { backgroundColor: cat.color || "#6366F1" }]}>
+                <Text style={styles.catIconText}>{cat.icon || cat.name?.charAt(0).toUpperCase()}</Text>
+              </View>
+              <Text style={styles.catName}>{cat.name}</Text>
+              <View style={styles.catActions}>
+                <TouchableOpacity style={styles.editBtn} onPress={() => handleEditOpen(cat)}>
+                  <Text style={styles.editBtnText}>{t("edit")}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(cat)}>
+                  <Text style={styles.deleteBtnText}>{t("delete")}</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-            <ScrollView style={{ padding: 20 }}>
-              <TextInput
-                style={styles.input}
-                value={editName}
-                onChangeText={setEditName}
-                placeholder="Category name"
-                color="#1f2937"
-              />
-              <View style={styles.previewRow}>
-                <View style={[styles.previewCircle, { backgroundColor: editColor }]}>
-                  <Text style={styles.previewShort}>{editIcon.short}</Text>
+          ))}
+        </View>
+
+        <Modal visible={showEditModal} transparent animationType="slide">
+          <TouchableOpacity style={styles.modalOverlay} onPress={() => setShowEditModal(false)} activeOpacity={1}>
+            <View style={styles.modalBox}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>{t("editCategory")}</Text>
+                <TouchableOpacity onPress={() => setShowEditModal(false)}>
+                  <Text style={styles.modalClose}>X</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView style={{ padding: 20 }}>
+                <TextInput style={styles.input} value={editName} onChangeText={setEditName} placeholder={t("categoryName")} placeholderTextColor="#9ca3af" />
+                <View style={styles.previewRow}>
+                  <View style={[styles.previewCircle, { backgroundColor: editColor }]}>
+                    <Text style={styles.previewShort}>{editIcon.short}</Text>
+                  </View>
+                  <Text style={styles.previewName}>{editName || t("preview")}</Text>
                 </View>
-                <Text style={styles.previewName}>{editName || "Preview"}</Text>
-              </View>
-              <Text style={styles.label}>Choose Icon</Text>
-              <View style={styles.iconGrid}>
-                {ICONS.map((item) => (
-                  <TouchableOpacity
-                    key={item.label}
-                    style={[styles.iconBtn, editIcon.label === item.label && { backgroundColor: editColor, borderColor: editColor }]}
-                    onPress={() => setEditIcon(item)}>
-                    <Text style={[styles.iconShort, editIcon.label === item.label && { color: "#fff" }]}>{item.short}</Text>
-                    <Text style={[styles.iconLabel, editIcon.label === item.label && { color: "#fff" }]}>{item.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <Text style={styles.label}>Choose Color</Text>
-              <View style={styles.colorGrid}>
-                {COLORS.map((color) => (
-                  <TouchableOpacity
-                    key={color}
-                    onPress={() => setEditColor(color)}
-                    style={[styles.colorBtn, { backgroundColor: color }, editColor === color && styles.colorBtnSelected]}>
-                    {editColor === color && <Text style={styles.colorCheck}>?</Text>}
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <TouchableOpacity style={[styles.saveBtn, { backgroundColor: editColor }]} onPress={handleEditSave} disabled={editSaving}>
-                {editSaving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Save Changes</Text>}
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </TouchableOpacity>
-      </Modal>
+                <Text style={styles.label}>{t("selectIcon")}</Text>
+                <View style={styles.iconGrid}>
+                  {ICONS.map((item) => (
+                    <TouchableOpacity key={item.label} style={[styles.iconBtn, editIcon.label === item.label && { backgroundColor: editColor, borderColor: editColor }]} onPress={() => setEditIcon(item)}>
+                      <Text style={[styles.iconShort, editIcon.label === item.label && { color: "#fff" }]}>{item.short}</Text>
+                      <Text style={[styles.iconLabel, editIcon.label === item.label && { color: "#fff" }]}>{item.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <Text style={styles.label}>{t("selectColor")}</Text>
+                <View style={styles.colorGrid}>
+                  {COLORS.map((color) => (
+                    <TouchableOpacity key={color} onPress={() => setEditColor(color)} style={[styles.colorBtn, { backgroundColor: color }, editColor === color && styles.colorBtnSelected]} />
+                  ))}
+                </View>
+                <TouchableOpacity style={[styles.saveBtn, { backgroundColor: editColor }]} onPress={handleEditSave} disabled={editSaving}>
+                  {editSaving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>{t("save")}</Text>}
+                </TouchableOpacity>
+              </ScrollView>
+            </View>
+          </TouchableOpacity>
+        </Modal>
 
-      <View style={{ height: 40 }} />
-    </ScrollView>
+        <View style={{ height: 40 }} />
+      </ScrollView>
     </View>
   );
 }
@@ -283,7 +242,6 @@ const styles = StyleSheet.create({
   colorGrid:        { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 20 },
   colorBtn:         { width: 40, height: 40, borderRadius: 20, justifyContent: "center", alignItems: "center" },
   colorBtnSelected: { borderWidth: 3, borderColor: "#1f2937" },
-  colorCheck:       { color: "#fff", fontWeight: "bold", fontSize: 16 },
   saveBtn:          { borderRadius: 14, padding: 15, alignItems: "center", elevation: 3, marginBottom: 16 },
   saveBtnText:      { color: "#fff", fontWeight: "bold", fontSize: 15 },
   listTitle:        { fontSize: 16, fontWeight: "bold", color: "#1f2937", paddingHorizontal: 20, marginBottom: 8 },
@@ -304,6 +262,3 @@ const styles = StyleSheet.create({
   modalTitle:       { fontSize: 18, fontWeight: "bold", color: "#1f2937" },
   modalClose:       { fontSize: 18, color: "#6b7280", fontWeight: "bold" },
 });
-
-
-

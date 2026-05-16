@@ -4,8 +4,10 @@ import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import api from "../services/api";
 import Toast from "../components/Toast";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function ReceiptScannerScreen({ navigation }) {
+  const { t } = useLanguage();
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState(null);
@@ -15,34 +17,18 @@ export default function ReceiptScannerScreen({ navigation }) {
   const showToast = (message, type = "success") => setToast({ visible: true, message, type });
 
   const pickImage = async (useCamera = false) => {
-    console.log("=== pickImage called ===");
-    console.log("useCamera:", useCamera);
-
     try {
-      // Request permission
-      console.log("Requesting permission...");
       const permission = useCamera
         ? await ImagePicker.requestCameraPermissionsAsync()
         : await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-      console.log("Permission result:", JSON.stringify(permission));
-
       if (!permission.granted) {
-        Alert.alert(
-          "Permission Required",
-          useCamera
-            ? "Camera access is required. Please enable it in app settings."
-            : "Photo library access is required. Please enable it in app settings.",
-          [{ text: "OK" }]
-        );
+        Alert.alert(t("error"), "Permission required", [{ text: t("ok") }]);
         return;
       }
 
-      console.log("Permission granted! Launching picker...");
-
-      // Launch picker - SDK 54 compatible syntax
       const pickerOptions = {
-        mediaTypes: ["images"],   // SDK 54: array of strings, not MediaTypeOptions
+        mediaTypes: ["images"],
         allowsEditing: true,
         quality: 0.8,
         aspect: [3, 4],
@@ -52,30 +38,17 @@ export default function ReceiptScannerScreen({ navigation }) {
         ? await ImagePicker.launchCameraAsync(pickerOptions)
         : await ImagePicker.launchImageLibraryAsync(pickerOptions);
 
-      console.log("Picker result:", JSON.stringify({
-        canceled: result.canceled,
-        hasAssets: !!result.assets,
-        assetCount: result.assets?.length
-      }));
-
-      if (result.canceled) {
-        console.log("User cancelled picker");
-        return;
-      }
-
+      if (result.canceled) return;
       if (!result.assets || result.assets.length === 0) {
-        showToast("No image selected", "error");
+        showToast(t("error"), "error");
         return;
       }
 
       const asset = result.assets[0];
-      console.log("Selected asset URI:", asset.uri);
       setImage(asset.uri);
       analyzeReceipt(asset.uri);
     } catch (err) {
-      console.log("pickImage error:", err.message);
-      console.log("Stack:", err.stack);
-      Alert.alert("Error", "Could not open " + (useCamera ? "camera" : "gallery") + ": " + err.message);
+      Alert.alert(t("error"), err.message);
     }
   };
 
@@ -83,34 +56,20 @@ export default function ReceiptScannerScreen({ navigation }) {
     setLoading(true);
     setPreview(null);
     try {
-      console.log("=== Analyzing receipt ===");
-      console.log("Resizing image...");
-
       const manipulated = await ImageManipulator.manipulateAsync(
         uri,
         [{ resize: { width: 800 } }],
         { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true }
       );
-
-      console.log("Image resized. Base64 length:", manipulated.base64?.length);
-      console.log("Sending to backend...");
-
-      const res = await api.post("/api/ai/scan-receipt/", {
-        image: manipulated.base64,
-      });
-
-      console.log("Backend response:", JSON.stringify(res.data));
-
+      const res = await api.post("/api/ai/scan-receipt/", { image: manipulated.base64 });
       if (res.data.parsed) {
         setPreview(res.data.parsed);
-        showToast("Receipt analyzed!", "success");
+        showToast(t("success"), "success");
       } else {
-        showToast("Could not read receipt. Try again.", "error");
+        showToast(t("scanFailed"), "error");
       }
     } catch (e) {
-      console.log("analyzeReceipt error:", e.message);
-      console.log("Response data:", JSON.stringify(e.response?.data));
-      showToast(e.response?.data?.error || "Something went wrong: " + e.message, "error");
+      showToast(e.response?.data?.error || t("somethingWrong"), "error");
     } finally {
       setLoading(false);
     }
@@ -119,13 +78,11 @@ export default function ReceiptScannerScreen({ navigation }) {
   const handleConfirm = async () => {
     setConfirming(true);
     try {
-      console.log("Confirming receipt:", JSON.stringify(preview));
       await api.post("/api/ai/add-expense/", { text: "", action: "confirm", parsed: preview });
-      showToast("Receipt saved successfully!");
+      showToast(t("savedSuccess"));
       setTimeout(() => navigation.navigate("Dashboard"), 1500);
     } catch (e) {
-      console.log("Confirm error:", e.message);
-      showToast("Failed to save: " + e.message, "error");
+      showToast(t("saveFailed"), "error");
     } finally {
       setConfirming(false);
     }
@@ -141,20 +98,20 @@ export default function ReceiptScannerScreen({ navigation }) {
       <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
 
         <View style={styles.header}>
-          <Text style={styles.title}>Receipt Scanner</Text>
-          <Text style={styles.subtitle}>Take a photo of your receipt</Text>
+          <Text style={styles.title}>{t("receiptScanner")}</Text>
+          <Text style={styles.subtitle}>{t("scanReceipt")}</Text>
         </View>
 
         {!image ? (
           <View style={styles.scanBox}>
-            <Text style={styles.scanIcon}>📷</Text>
-            <Text style={styles.scanText}>No receipt scanned yet</Text>
+            <Text style={styles.scanIcon}>SCAN</Text>
+            <Text style={styles.scanText}>{t("scanReceipt")}</Text>
             <View style={styles.btnRow}>
               <TouchableOpacity style={styles.cameraBtn} onPress={() => pickImage(true)} activeOpacity={0.7}>
-                <Text style={styles.cameraBtnText}>📸 Camera</Text>
+                <Text style={styles.cameraBtnText}>{t("takePicture")}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.galleryBtn} onPress={() => pickImage(false)} activeOpacity={0.7}>
-                <Text style={styles.galleryBtnText}>🖼 Gallery</Text>
+                <Text style={styles.galleryBtnText}>{t("chooseFromGallery")}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -164,12 +121,12 @@ export default function ReceiptScannerScreen({ navigation }) {
             {loading && (
               <View style={styles.loadingOverlay}>
                 <ActivityIndicator color="#fff" size="large" />
-                <Text style={styles.loadingText}>Analyzing receipt...</Text>
+                <Text style={styles.loadingText}>{t("processingImage")}</Text>
               </View>
             )}
             <View style={styles.imageActions}>
               <TouchableOpacity style={styles.retakeBtn} onPress={() => { setImage(null); setPreview(null); }}>
-                <Text style={styles.retakeBtnText}>Retake</Text>
+                <Text style={styles.retakeBtnText}>{t("tryAgain")}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -178,54 +135,37 @@ export default function ReceiptScannerScreen({ navigation }) {
         {preview && (
           <View style={styles.previewCard}>
             <View style={[styles.previewHeader, { backgroundColor: typeColor }]}>
-              <Text style={styles.previewHeaderText}>AI Preview</Text>
+              <Text style={styles.previewHeaderText}>{t("preview")}</Text>
             </View>
             <View style={styles.previewBody}>
-              <Text style={styles.fieldLabel}>Type</Text>
+              <Text style={styles.fieldLabel}>{t("type")}</Text>
               <View style={styles.typeRow}>
-                {["expense", "income"].map(t => (
-                  <TouchableOpacity
-                    key={t}
-                    style={[styles.typeBtn, preview.type === t && { backgroundColor: t === "income" ? "#10B981" : "#EF4444", borderColor: t === "income" ? "#10B981" : "#EF4444" }]}
-                    onPress={() => handleEdit("type", t)}>
-                    <Text style={[styles.typeBtnText, preview.type === t && { color: "#fff" }]}>
-                      {t === "income" ? "Income" : "Expense"}
+                {["expense", "income"].map(ty => (
+                  <TouchableOpacity key={ty} style={[styles.typeBtn, preview.type === ty && { backgroundColor: ty === "income" ? "#10B981" : "#EF4444", borderColor: ty === "income" ? "#10B981" : "#EF4444" }]} onPress={() => handleEdit("type", ty)}>
+                    <Text style={[styles.typeBtnText, preview.type === ty && { color: "#fff" }]}>
+                      {ty === "income" ? t("income") : t("expense")}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text style={styles.fieldLabel}>Amount (Tk)</Text>
-              <TextInput
-                style={styles.editInput}
-                value={String(preview.amount || "")}
-                onChangeText={v => handleEdit("amount", parseFloat(v) || 0)}
-                keyboardType="numeric"
-                color="#1f2937"
-              />
+              <Text style={styles.fieldLabel}>{t("amount")} (Tk)</Text>
+              <TextInput style={styles.editInput} value={String(preview.amount || "")} onChangeText={v => handleEdit("amount", parseFloat(v) || 0)} keyboardType="numeric" />
 
-              <Text style={styles.fieldLabel}>Note</Text>
-              <TextInput
-                style={styles.editInput}
-                value={preview.note || ""}
-                onChangeText={v => handleEdit("note", v)}
-                color="#1f2937"
-              />
+              <Text style={styles.fieldLabel}>{t("note")}</Text>
+              <TextInput style={styles.editInput} value={preview.note || ""} onChangeText={v => handleEdit("note", v)} />
 
-              <Text style={styles.fieldLabel}>Category</Text>
+              <Text style={styles.fieldLabel}>{t("category")}</Text>
               <View style={styles.categoryBadge}>
-                <Text style={styles.categoryBadgeText}>{preview.category_name || preview.category_hint || "None"}</Text>
+                <Text style={styles.categoryBadgeText}>{preview.category_name || preview.category_hint || "-"}</Text>
               </View>
 
               <View style={styles.actionRow}>
                 <TouchableOpacity style={styles.cancelBtn} onPress={() => { setPreview(null); setImage(null); }}>
-                  <Text style={styles.cancelBtnText}>Cancel</Text>
+                  <Text style={styles.cancelBtnText}>{t("cancel")}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.confirmBtn, { backgroundColor: typeColor }]}
-                  onPress={handleConfirm}
-                  disabled={confirming}>
-                  {confirming ? <ActivityIndicator color="#fff" /> : <Text style={styles.confirmBtnText}>Confirm & Save</Text>}
+                <TouchableOpacity style={[styles.confirmBtn, { backgroundColor: typeColor }]} onPress={handleConfirm} disabled={confirming}>
+                  {confirming ? <ActivityIndicator color="#fff" /> : <Text style={styles.confirmBtnText}>{t("save")}</Text>}
                 </TouchableOpacity>
               </View>
             </View>
@@ -244,7 +184,7 @@ const styles = StyleSheet.create({
   title:             { fontSize: 24, fontWeight: "bold", color: "#1f2937" },
   subtitle:          { fontSize: 14, color: "#6b7280", marginTop: 4 },
   scanBox:           { margin: 16, backgroundColor: "#fff", borderRadius: 20, padding: 40, alignItems: "center", elevation: 2 },
-  scanIcon:          { fontSize: 60, marginBottom: 16 },
+  scanIcon:          { fontSize: 24, marginBottom: 16, fontWeight: "bold", color: "#6366F1" },
   scanText:          { fontSize: 15, color: "#9ca3af", marginBottom: 24 },
   btnRow:            { flexDirection: "row", gap: 12 },
   cameraBtn:         { backgroundColor: "#6366F1", borderRadius: 12, paddingHorizontal: 20, paddingVertical: 12 },
@@ -266,7 +206,7 @@ const styles = StyleSheet.create({
   typeRow:           { flexDirection: "row", gap: 10 },
   typeBtn:           { flex: 1, padding: 10, borderRadius: 10, borderWidth: 1.5, borderColor: "#e5e7eb", alignItems: "center" },
   typeBtnText:       { fontSize: 14, fontWeight: "600", color: "#6b7280" },
-  editInput:         { backgroundColor: "#f8f9ff", borderWidth: 1.5, borderColor: "#e5e7eb", borderRadius: 10, padding: 12, fontSize: 15 },
+  editInput:         { backgroundColor: "#f8f9ff", borderWidth: 1.5, borderColor: "#e5e7eb", borderRadius: 10, padding: 12, fontSize: 15, color: "#1f2937" },
   categoryBadge:     { backgroundColor: "#ede9fe", paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, alignSelf: "flex-start" },
   categoryBadgeText: { color: "#6366F1", fontWeight: "600", fontSize: 14 },
   actionRow:         { flexDirection: "row", gap: 12, marginTop: 20 },

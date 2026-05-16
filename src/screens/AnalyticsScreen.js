@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions } from "react-native";
 import { BarChart, PieChart } from "react-native-chart-kit";
 import { analyticsAPI, expenseAPI } from "../services/api";
+import { useLanguage } from "../context/LanguageContext";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -10,12 +11,13 @@ const chartConfig = {
   backgroundGradientFrom: "#fff",
   backgroundGradientTo: "#fff",
   decimalPlaces: 0,
-  color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
-  labelColor: (opacity = 1) => `rgba(31, 41, 55, ${opacity})`,
+  color: (opacity = 1) => "rgba(99, 102, 241, " + opacity + ")",
+  labelColor: (opacity = 1) => "rgba(31, 41, 55, " + opacity + ")",
   style: { borderRadius: 16 },
 };
 
 export default function AnalyticsScreen() {
+  const { t } = useLanguage();
   const [trend, setTrend] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,8 +43,8 @@ export default function AnalyticsScreen() {
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color="#6366F1" />;
 
   const barData = {
-    labels: trend.map(t => t.label),
-    datasets: [{ data: trend.map(t => t.expense || 0) }],
+    labels: trend.map(tr => tr.label),
+    datasets: [{ data: trend.map(tr => tr.expense || 0) }],
   };
 
   const colors = ["#6366F1", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#06B6D4"];
@@ -56,43 +58,24 @@ export default function AnalyticsScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>Analytics</Text>
+      <Text style={styles.title}>{t("analytics")}</Text>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Monthly Expense (Last 6 Months)</Text>
+        <Text style={styles.cardTitle}>{t("monthlyTrend")} ({t("last6Months")})</Text>
         {trend.length > 0 ? (
-          <BarChart
-            data={barData}
-            width={screenWidth - 48}
-            height={200}
-            chartConfig={chartConfig}
-            style={styles.chart}
-            fromZero
-          />
-        ) : (
-          <Text style={styles.empty}>No data available</Text>
-        )}
+          <BarChart data={barData} width={screenWidth - 48} height={200} chartConfig={chartConfig} style={styles.chart} fromZero />
+        ) : (<Text style={styles.empty}>{t("noResults")}</Text>)}
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>This Month by Category</Text>
+        <Text style={styles.cardTitle}>{t("thisMonth")} - {t("topCategories")}</Text>
         {pieData.length > 0 ? (
-          <PieChart
-            data={pieData}
-            width={screenWidth - 48}
-            height={200}
-            chartConfig={chartConfig}
-            accessor="amount"
-            backgroundColor="transparent"
-            paddingLeft="15"
-          />
-        ) : (
-          <Text style={styles.empty}>No data available</Text>
-        )}
+          <PieChart data={pieData} width={screenWidth - 48} height={200} chartConfig={chartConfig} accessor="amount" backgroundColor="transparent" paddingLeft="15" />
+        ) : (<Text style={styles.empty}>{t("noResults")}</Text>)}
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Category Breakdown</Text>
+        <Text style={styles.cardTitle}>{t("topCategories")}</Text>
         {categories.map((cat, i) => (
           <View key={i} style={styles.catRow}>
             <View style={[styles.catDot, { backgroundColor: cat.category__color || colors[i % colors.length] }]} />
@@ -100,7 +83,7 @@ export default function AnalyticsScreen() {
             <Text style={styles.catAmount}>Tk {parseFloat(cat.total).toFixed(0)}</Text>
           </View>
         ))}
-        {categories.length === 0 && <Text style={styles.empty}>No data available</Text>}
+        {categories.length === 0 && <Text style={styles.empty}>{t("noResults")}</Text>}
       </View>
     </ScrollView>
   );

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from "react-native";
 import api from "../services/api";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function BudgetPredictionScreen() {
+  const { t } = useLanguage();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -16,7 +18,7 @@ export default function BudgetPredictionScreen() {
       const res = await api.get("/api/ai/budget-prediction/");
       setData(res.data.prediction);
     } catch (e) {
-      setError("Failed to load prediction");
+      setError(t("somethingWrong"));
     } finally {
       setLoading(false);
     }
@@ -25,7 +27,7 @@ export default function BudgetPredictionScreen() {
   if (loading) return (
     <View style={styles.center}>
       <ActivityIndicator size="large" color="#6366F1" />
-      <Text style={styles.loadingText}>AI is analyzing your spending...</Text>
+      <Text style={styles.loadingText}>{t("loading")}</Text>
     </View>
   );
 
@@ -33,7 +35,7 @@ export default function BudgetPredictionScreen() {
     <View style={styles.center}>
       <Text style={styles.errorText}>{error}</Text>
       <TouchableOpacity style={styles.retryBtn} onPress={fetchPrediction}>
-        <Text style={styles.retryBtnText}>Retry</Text>
+        <Text style={styles.retryBtnText}>{t("retry")}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -44,51 +46,47 @@ export default function BudgetPredictionScreen() {
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
 
-      {/* Progress Card */}
       <View style={styles.progressCard}>
-        <Text style={styles.progressTitle}>Month Progress</Text>
-        <Text style={styles.progressDays}>{data?.days_passed}/{data?.days_in_month} days</Text>
+        <Text style={styles.progressTitle}>{t("budgetPrediction")}</Text>
+        <Text style={styles.progressDays}>{data?.days_passed}/{data?.days_in_month} {t("daysPassed")}</Text>
         <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: `${(data?.days_passed / data?.days_in_month) * 100}%` }]} />
+          <View style={[styles.progressFill, { width: ((data?.days_passed / data?.days_in_month) * 100) + "%" }]} />
         </View>
       </View>
 
-      {/* Stats Row */}
       <View style={styles.statsRow}>
         <View style={[styles.statCard, { backgroundColor: "#EF4444" }]}>
-          <Text style={styles.statLabel}>Current Expense</Text>
+          <Text style={styles.statLabel}>{t("currentSpending")}</Text>
           <Text style={styles.statValue}>Tk {data?.current_expense?.toFixed(0)}</Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: "#6366F1" }]}>
-          <Text style={styles.statLabel}>Predicted Total</Text>
+          <Text style={styles.statLabel}>{t("predictedTotal")}</Text>
           <Text style={styles.statValue}>Tk {data?.predicted_total?.toFixed(0)}</Text>
         </View>
       </View>
 
       <View style={styles.statsRow}>
         <View style={[styles.statCard, { backgroundColor: "#10B981" }]}>
-          <Text style={styles.statLabel}>Daily Average</Text>
+          <Text style={styles.statLabel}>{t("avgDaily")}</Text>
           <Text style={styles.statValue}>Tk {data?.daily_average?.toFixed(0)}</Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: "#F59E0B" }]}>
-          <Text style={styles.statLabel}>Savings Rate</Text>
+          <Text style={styles.statLabel}>Savings %</Text>
           <Text style={styles.statValue}>{savingsRate.toFixed(0)}%</Text>
         </View>
       </View>
 
-      {/* Expense Progress */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Expense vs Prediction</Text>
+        <Text style={styles.cardTitle}>{t("currentSpending")} vs {t("predictedTotal")}</Text>
         <View style={styles.expenseBar}>
-          <View style={[styles.expenseFill, { width: `${progressPercent}%`, backgroundColor: progressPercent > 80 ? "#EF4444" : "#6366F1" }]} />
+          <View style={[styles.expenseFill, { width: progressPercent + "%", backgroundColor: progressPercent > 80 ? "#EF4444" : "#6366F1" }]} />
         </View>
-        <Text style={styles.expensePercent}>{progressPercent.toFixed(0)}% of predicted</Text>
+        <Text style={styles.expensePercent}>{progressPercent.toFixed(0)}%</Text>
       </View>
 
-      {/* Category Breakdown */}
       {data?.category_breakdown?.length > 0 && (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Top Categories</Text>
+          <Text style={styles.cardTitle}>{t("topCategories")}</Text>
           {data.category_breakdown.slice(0, 5).map((cat, i) => (
             <View key={i} style={styles.catRow}>
               <Text style={styles.catName}>{cat.name}</Text>
@@ -98,17 +96,16 @@ export default function BudgetPredictionScreen() {
         </View>
       )}
 
-      {/* AI Advice */}
       <View style={styles.adviceCard}>
         <View style={styles.adviceHeader}>
           <Text style={styles.adviceIcon}>AI</Text>
-          <Text style={styles.adviceTitle}>AI Financial Advice</Text>
+          <Text style={styles.adviceTitle}>{t("aiAdvice")}</Text>
         </View>
         <Text style={styles.adviceText}>{data?.ai_advice}</Text>
       </View>
 
       <TouchableOpacity style={styles.refreshBtn} onPress={fetchPrediction}>
-        <Text style={styles.refreshBtnText}>Refresh Analysis</Text>
+        <Text style={styles.refreshBtnText}>{t("refresh")}</Text>
       </TouchableOpacity>
 
       <View style={{ height: 40 }} />

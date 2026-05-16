@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
-import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity,
-  ActivityIndicator, Alert, TextInput, RefreshControl, ScrollView
-} from "react-native";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, TextInput, RefreshControl, ScrollView } from "react-native";
 import { expenseAPI, categoryAPI } from "../services/api";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function ExpenseListScreen({ navigation }) {
+  const { t } = useLanguage();
   const [expenses, setExpenses] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,23 +34,15 @@ export default function ExpenseListScreen({ navigation }) {
   const onRefresh = () => { setRefreshing(true); fetchData(); };
 
   const handleDelete = (id) => {
-    Alert.alert(
-      "Delete",
-      "Are you sure you want to delete this transaction?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await expenseAPI.delete(id);
-              setExpenses(expenses.filter(e => e.id !== id));
-            } catch (e) { Alert.alert("Error", "Something went wrong"); }
-          }
-        }
-      ]
-    );
+    Alert.alert(t("delete"), t("deleteThisTxn"), [
+      { text: t("cancel"), style: "cancel" },
+      { text: t("delete"), style: "destructive", onPress: async () => {
+        try {
+          await expenseAPI.delete(id);
+          setExpenses(expenses.filter(e => e.id !== id));
+        } catch (e) { Alert.alert(t("error"), t("somethingWrong")); }
+      }}
+    ]);
   };
 
   const filtered = expenses.filter(e => {
@@ -65,17 +56,17 @@ export default function ExpenseListScreen({ navigation }) {
     <View style={styles.expenseItem}>
       <View style={[styles.typeDot, { backgroundColor: item.type === "income" ? "#10B981" : "#EF4444" }]} />
       <View style={styles.expenseInfo}>
-        <Text style={styles.expenseNote}>{item.note || "No note"}</Text>
-        <Text style={styles.expenseDate}>{item.date} • {item.category_detail?.name || "No category"}</Text>
+        <Text style={styles.expenseNote}>{item.note || "-"}</Text>
+        <Text style={styles.expenseDate}>{item.date} - {item.category_detail?.name || "-"}</Text>
       </View>
       <Text style={[styles.expenseAmount, { color: item.type === "income" ? "#10B981" : "#EF4444" }]}>
         {item.type === "income" ? "+" : "-"}Tk {parseFloat(item.amount).toFixed(0)}
       </Text>
       <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate("EditExpense", { expense: item })}>
-        <Text style={styles.editBtnText}>Edit</Text>
+        <Text style={styles.editBtnText}>{t("edit")}</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(item.id)}>
-        <Text style={styles.deleteBtnText}>Del</Text>
+        <Text style={styles.deleteBtnText}>{t("delete")}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -84,50 +75,30 @@ export default function ExpenseListScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <TextInput
-        style={styles.searchInput}
-        placeholder="Search transactions..."
-        value={search}
-        onChangeText={setSearch}
-      />
+      <TextInput style={styles.searchInput} placeholder={t("searchTransactions")} placeholderTextColor="#9ca3af" value={search} onChangeText={setSearch} />
       <View style={styles.typeFilter}>
-        {[null, "expense", "income"].map((t) => (
-          <TouchableOpacity
-            key={t || "all"}
-            style={[styles.typeFilterBtn, selectedType === t && styles.typeFilterBtnActive]}
-            onPress={() => setSelectedType(t)}>
-            <Text style={[styles.typeFilterText, selectedType === t && styles.typeFilterTextActive]}>
-              {t === null ? "All" : t === "expense" ? "Expense" : "Income"}
+        {[null, "expense", "income"].map((ty) => (
+          <TouchableOpacity key={ty || "all"} style={[styles.typeFilterBtn, selectedType === ty && styles.typeFilterBtnActive]} onPress={() => setSelectedType(ty)}>
+            <Text style={[styles.typeFilterText, selectedType === ty && styles.typeFilterTextActive]}>
+              {ty === null ? t("all") : ty === "expense" ? t("expense") : t("income")}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryFilter}>
-        <TouchableOpacity
-          style={[styles.catFilterBtn, selectedCategory === null && styles.catFilterBtnActive]}
-          onPress={() => setSelectedCategory(null)}>
-          <Text style={[styles.catFilterText, selectedCategory === null && styles.catFilterTextActive]}>All</Text>
+        <TouchableOpacity style={[styles.catFilterBtn, selectedCategory === null && styles.catFilterBtnActive]} onPress={() => setSelectedCategory(null)}>
+          <Text style={[styles.catFilterText, selectedCategory === null && styles.catFilterTextActive]}>{t("all")}</Text>
         </TouchableOpacity>
         {categories.map((cat) => (
-          <TouchableOpacity
-            key={cat.id}
-            style={[styles.catFilterBtn, selectedCategory === cat.id && { backgroundColor: cat.color, borderColor: cat.color }]}
-            onPress={() => setSelectedCategory(selectedCategory === cat.id ? null : cat.id)}>
+          <TouchableOpacity key={cat.id} style={[styles.catFilterBtn, selectedCategory === cat.id && { backgroundColor: cat.color, borderColor: cat.color }]} onPress={() => setSelectedCategory(selectedCategory === cat.id ? null : cat.id)}>
             <Text style={[styles.catFilterText, selectedCategory === cat.id && { color: "#fff" }]}>
               {cat.icon} {cat.name}
             </Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
-      <Text style={styles.resultCount}>{filtered.length} transactions</Text>
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderItem}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        ListEmptyComponent={<Text style={styles.empty}>No transactions found</Text>}
-        contentContainerStyle={{ padding: 16 }}
-      />
+      <Text style={styles.resultCount}>{filtered.length} {t("transactionsFound")}</Text>
+      <FlatList data={filtered} keyExtractor={(item) => item.id.toString()} renderItem={renderItem} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />} ListEmptyComponent={<Text style={styles.empty}>{t("noResults")}</Text>} contentContainerStyle={{ padding: 16 }} />
       <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate("AddExpense")}>
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
@@ -137,7 +108,7 @@ export default function ExpenseListScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container:            { flex: 1, backgroundColor: "#f8f9fa" },
-  searchInput:          { backgroundColor: "#fff", margin: 16, marginBottom: 8, borderRadius: 12, padding: 14, fontSize: 16, borderWidth: 1, borderColor: "#e5e7eb" },
+  searchInput:          { backgroundColor: "#fff", margin: 16, marginBottom: 8, borderRadius: 12, padding: 14, fontSize: 16, borderWidth: 1, borderColor: "#e5e7eb", color: "#1f2937" },
   typeFilter:           { flexDirection: "row", paddingHorizontal: 16, gap: 8, marginBottom: 8 },
   typeFilterBtn:        { flex: 1, padding: 8, borderRadius: 20, borderWidth: 1, borderColor: "#e5e7eb", alignItems: "center", backgroundColor: "#fff" },
   typeFilterBtnActive:  { backgroundColor: "#6366F1", borderColor: "#6366F1" },
@@ -156,11 +127,10 @@ const styles = StyleSheet.create({
   expenseDate:          { fontSize: 12, color: "#6b7280", marginTop: 4 },
   expenseAmount:        { fontSize: 15, fontWeight: "bold", marginRight: 8 },
   editBtn:              { padding: 6 },
-  editBtnText:          { fontSize: 16 },
+  editBtnText:          { fontSize: 12, color: "#6366F1", fontWeight: "600" },
   deleteBtn:            { padding: 6 },
-  deleteBtnText:        { fontSize: 16 },
+  deleteBtnText:        { fontSize: 12, color: "#EF4444", fontWeight: "600" },
   empty:                { textAlign: "center", color: "#6b7280", marginTop: 40, fontSize: 16 },
   fab:                  { position: "absolute", bottom: 24, right: 24, width: 56, height: 56, borderRadius: 28, backgroundColor: "#6366F1", justifyContent: "center", alignItems: "center", elevation: 5 },
   fabText:              { color: "#fff", fontSize: 28, fontWeight: "bold" },
 });
-

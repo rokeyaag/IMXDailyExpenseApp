@@ -1,21 +1,34 @@
 import React, { useState, useRef, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, SafeAreaView } from "react-native";
 import api from "../services/api";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function AIChatScreen() {
-  const [messages, setMessages] = useState([
-    { id: "1", role: "ai", text: "?????????????????! ??? ????? ????????? ???? ??????? ????? ???, ??? ?? ????? ???????? ?????? ?????? ????!" }
-  ]);
+  const { t, language } = useLanguage();
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const flatListRef = useRef(null);
 
-  const quickQuestions = [
-    "?? ???? ?? ??? ???????",
-    "???? balance ???",
-    "??? category ?? ???? ????",
-    "????? savings tips ???",
+  useEffect(() => {
+    setMessages([{ id: "1", role: "ai", text: t("askMe") }]);
+  }, [language]);
+
+  const quickQuestionsBn = [
+    "আজ কত খরচ করেছি?",
+    "আমার ব্যালেন্স কত?",
+    "কোন ক্যাটাগরিতে বেশি খরচ?",
+    "সেভিংস টিপস দাও",
   ];
+
+  const quickQuestionsEn = [
+    "How much did I spend today?",
+    "What is my balance?",
+    "Which category has highest expense?",
+    "Give me savings tips",
+  ];
+
+  const quickQuestions = language === "bn" ? quickQuestionsBn : quickQuestionsEn;
 
   const sendMessage = async (text) => {
     const msg = text || input.trim();
@@ -37,7 +50,7 @@ export default function AIChatScreen() {
       const aiMsg = { id: (Date.now() + 1).toString(), role: "ai", text: res.data.reply };
       setMessages(prev => [...prev, aiMsg]);
     } catch (e) {
-      const errMsg = { id: (Date.now() + 1).toString(), role: "ai", text: "??????, ???? ???? ?????? ??????? ???? ?????? ?????" };
+      const errMsg = { id: (Date.now() + 1).toString(), role: "ai", text: t("somethingWrong") };
       setMessages(prev => [...prev, errMsg]);
     } finally {
       setLoading(false);
@@ -52,9 +65,7 @@ export default function AIChatScreen() {
 
   const renderMessage = ({ item }) => (
     <View style={[styles.msgRow, item.role === "user" ? styles.userRow : styles.aiRow]}>
-      {item.role === "ai" && (
-        <View style={styles.aiAvatar}><Text style={styles.aiAvatarText}>AI</Text></View>
-      )}
+      {item.role === "ai" && (<View style={styles.aiAvatar}><Text style={styles.aiAvatarText}>AI</Text></View>)}
       <View style={[styles.bubble, item.role === "user" ? styles.userBubble : styles.aiBubble]}>
         <Text style={[styles.bubbleText, item.role === "user" ? styles.userText : styles.aiText]}>{item.text}</Text>
       </View>
@@ -63,27 +74,15 @@ export default function AIChatScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.inner}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 100}>
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          keyExtractor={item => item.id}
-          renderItem={renderMessage}
-          contentContainerStyle={styles.chatList}
-          showsVerticalScrollIndicator={false}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-          ListFooterComponent={loading ? (
-            <View style={[styles.aiRow, { marginBottom: 8 }]}>
-              <View style={styles.aiAvatar}><Text style={styles.aiAvatarText}>AI</Text></View>
-              <View style={[styles.aiBubble, { paddingHorizontal: 20 }]}>
-                <ActivityIndicator color="#6366F1" size="small" />
-              </View>
+      <KeyboardAvoidingView style={styles.inner} behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 100}>
+        <FlatList ref={flatListRef} data={messages} keyExtractor={item => item.id} renderItem={renderMessage} contentContainerStyle={styles.chatList} showsVerticalScrollIndicator={false} onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })} ListFooterComponent={loading ? (
+          <View style={[styles.aiRow, { marginBottom: 8 }]}>
+            <View style={styles.aiAvatar}><Text style={styles.aiAvatarText}>AI</Text></View>
+            <View style={[styles.aiBubble, { paddingHorizontal: 20 }]}>
+              <ActivityIndicator color="#6366F1" size="small" />
             </View>
-          ) : null}
-        />
+          </View>
+        ) : null} />
         <View style={styles.bottomSection}>
           <View style={styles.quickRow}>
             {quickQuestions.map((q, i) => (
@@ -93,20 +92,9 @@ export default function AIChatScreen() {
             ))}
           </View>
           <View style={styles.inputRow}>
-            <TextInput
-              style={styles.input}
-              placeholder="????? ?? English ? ??????? ????..."
-              placeholderTextColor="#9ca3af"
-              value={input}
-              onChangeText={setInput}
-              multiline
-              color="#1f2937"
-            />
-            <TouchableOpacity
-              style={[styles.sendBtn, (!input.trim() || loading) && { opacity: 0.5 }]}
-              onPress={() => sendMessage()}
-              disabled={!input.trim() || loading}>
-              <Text style={styles.sendBtnText}>Send</Text>
+            <TextInput style={styles.input} placeholder={t("typeMessage")} placeholderTextColor="#9ca3af" value={input} onChangeText={setInput} multiline />
+            <TouchableOpacity style={[styles.sendBtn, (!input.trim() || loading) && { opacity: 0.5 }]} onPress={() => sendMessage()} disabled={!input.trim() || loading}>
+              <Text style={styles.sendBtnText}>{t("submit")}</Text>
             </TouchableOpacity>
           </View>
         </View>

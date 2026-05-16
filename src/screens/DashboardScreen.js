@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Dimensions, Animated, Image } from "react-native";
 import { PieChart } from "react-native-chart-kit";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 import { expenseAPI, authAPI } from "../services/api";
 import { scheduleMontlyBudgetAlert } from "../services/notifications";
 
@@ -38,8 +39,22 @@ function AvatarSmall({ user, onPress }) {
   );
 }
 
+function LanguageToggle({ language, onToggle }) {
+  return (
+    <TouchableOpacity onPress={onToggle} style={styles.langToggle} activeOpacity={0.7}>
+      <View style={[styles.langOption, language === "en" && styles.langOptionActive]}>
+        <Text style={[styles.langText, language === "en" && styles.langTextActive]}>EN</Text>
+      </View>
+      <View style={[styles.langOption, language === "bn" && styles.langOptionActive]}>
+        <Text style={[styles.langText, language === "bn" && styles.langTextActive]}>বাং</Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 export default function DashboardScreen({ navigation }) {
   const { user, setUser } = useAuth();
+  const { language, toggleLanguage, t } = useLanguage();
   const [summary, setSummary] = useState(null);
   const [recent, setRecent] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -47,7 +62,7 @@ export default function DashboardScreen({ navigation }) {
   const today = new Date();
   const month = today.getMonth() + 1;
   const year = today.getFullYear();
-  const monthName = today.toLocaleString("en", { month: "long" });
+  const monthName = today.toLocaleString(language === "bn" ? "bn-BD" : "en", { month: "long" });
 
   useEffect(() => { fetchData(); }, []);
   useEffect(() => {
@@ -87,26 +102,27 @@ export default function DashboardScreen({ navigation }) {
   const balance = parseFloat(summary?.balance || 0);
 
   const pieData = income === 0 && expense === 0 ? [
-    { name: "No data", amount: 1, color: "#e5e7eb", legendFontColor: "#9ca3af", legendFontSize: 12 }
+    { name: t("noTransactions"), amount: 1, color: "#e5e7eb", legendFontColor: "#9ca3af", legendFontSize: 12 }
   ] : [
-    { name: "Income", amount: income, color: "#10B981", legendFontColor: "#1f2937", legendFontSize: 12 },
-    { name: "Expense", amount: expense, color: "#EF4444", legendFontColor: "#1f2937", legendFontSize: 12 },
-    ...(Math.abs(balance) > 0 ? [{ name: "Balance", amount: Math.abs(balance), color: "#F59E0B", legendFontColor: "#1f2937", legendFontSize: 12 }] : []),
+    { name: t("income"), amount: income, color: "#10B981", legendFontColor: "#1f2937", legendFontSize: 12 },
+    { name: t("expense"), amount: expense, color: "#EF4444", legendFontColor: "#1f2937", legendFontSize: 12 },
+    ...(Math.abs(balance) > 0 ? [{ name: t("balance"), amount: Math.abs(balance), color: "#F59E0B", legendFontColor: "#1f2937", legendFontSize: 12 }] : []),
   ];
 
   const buttons = [
-    { label: "Income",    icon: "\u2795", color: "#10B981", screen: "AddExpense", params: { defaultType: "income" } },
-    { label: "Expense",   icon: "\u2796", color: "#EF4444", screen: "AddExpense", params: { defaultType: "expense" } },
-    { label: "AI Entry",  icon: "\ud83e\udd16", color: "#6366F1", screen: "AI" },
-    { label: "AI Chat",   icon: "\ud83d\udcac", color: "#8B5CF6", screen: "AIChat" },
-    { label: "History",   icon: "\ud83d\udcca", color: "#06B6D4", screen: "ExpenseList" },
-    { label: "Budget",    icon: "\ud83d\udcb0", color: "#F59E0B", screen: "Budget" },
-    { label: "Analytics", icon: "\ud83d\udcc8", color: "#8B5CF6", screen: "Analytics" },
-    { label: "Category",  icon: "\ud83c\udff7", color: "#EC4899", screen: "Categories" },
-    { label: "Profile",   icon: user?.name?.charAt(0).toUpperCase() || "P", color: "#84CC16", screen: "Profile" },
-    { label: "Settings",  icon: "\u2699", color: "#6b7280", screen: "Settings" },
-    { label: "Scanner",   icon: "\ud83e\udde7", color: "#F97316", screen: "ReceiptScanner" },
-    { label: "Prediction", icon: "\ud83d\udd2e", color: "#8B5CF6", screen: "BudgetPrediction" },
+    { label: t("btnIncome"),    icon: "\u2795", color: "#10B981", screen: "AddExpense", params: { defaultType: "income" } },
+    { label: t("btnExpense"),   icon: "\u2796", color: "#EF4444", screen: "AddExpense", params: { defaultType: "expense" } },
+    { label: t("btnAIEntry"),   icon: "\ud83e\udd16", color: "#6366F1", screen: "AI" },
+    { label: t("btnAIChat"),    icon: "\ud83d\udcac", color: "#8B5CF6", screen: "AIChat" },
+    { label: t("btnHistory"),   icon: "\ud83d\udcca", color: "#06B6D4", screen: "ExpenseList" },
+    { label: t("btnBudget"),    icon: "\ud83d\udcb0", color: "#F59E0B", screen: "Budget" },
+    { label: t("btnAnalytics"), icon: "\ud83d\udcc8", color: "#8B5CF6", screen: "Analytics" },
+    { label: t("btnCategory"),  icon: "\ud83c\udff7", color: "#EC4899", screen: "Categories" },
+    { label: t("btnProfile"),   icon: user?.name?.charAt(0).toUpperCase() || "P", color: "#84CC16", screen: "Profile" },
+    { label: t("btnSettings"),  icon: "\u2699", color: "#6b7280", screen: "Settings" },
+    { label: t("btnScanner"),   icon: "\ud83e\udde7", color: "#F97316", screen: "ReceiptScanner" },
+    { label: t("btnPrediction"),icon: "\ud83d\udd2e", color: "#8B5CF6", screen: "BudgetPrediction" },
+    { label: t("btnReports"),   icon: "\ud83d\udcc4", color: "#0EA5E9", screen: "Report" },
   ];
 
   const getTypeColor = (type) => type === "income" ? "#10B981" : "#EF4444";
@@ -119,33 +135,34 @@ export default function DashboardScreen({ navigation }) {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#6366F1"]} />}>
 
       <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Hello, {user?.name}!</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.greeting}>{t("hello")}, {user?.name}!</Text>
           <Text style={styles.subGreeting}>{monthName} {year}</Text>
         </View>
+        <LanguageToggle language={language} onToggle={toggleLanguage} />
         <AvatarSmall user={user} onPress={() => navigation.navigate("Profile")} />
       </View>
 
       <View style={styles.balanceCard}>
-        <Text style={styles.balanceLabel}>Current Balance</Text>
+        <Text style={styles.balanceLabel}>{t("currentBalance")}</Text>
         <Text style={[styles.balanceAmount, { color: balance >= 0 ? "#fff" : "#fca5a5" }]}>
           Tk {balance.toFixed(0)}
         </Text>
         <View style={styles.balanceRow}>
           <View style={styles.balanceItem}>
-            <Text style={styles.balanceItemLabel}>Income</Text>
+            <Text style={styles.balanceItemLabel}>{t("income")}</Text>
             <Text style={styles.balanceItemValue}>Tk {income.toFixed(0)}</Text>
           </View>
           <View style={styles.balanceDivider} />
           <View style={styles.balanceItem}>
-            <Text style={styles.balanceItemLabel}>Expense</Text>
+            <Text style={styles.balanceItemLabel}>{t("expense")}</Text>
             <Text style={styles.balanceItemValue}>Tk {expense.toFixed(0)}</Text>
           </View>
         </View>
       </View>
 
       <View style={styles.chartCard}>
-        <Text style={styles.chartTitle}>This Month Overview</Text>
+        <Text style={styles.chartTitle}>{t("thisMonthOverview")}</Text>
         <PieChart
           data={pieData}
           width={screenWidth - 48}
@@ -160,7 +177,7 @@ export default function DashboardScreen({ navigation }) {
       </View>
 
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <Text style={styles.sectionTitle}>{t("quickActions")}</Text>
       </View>
       <View style={styles.btnGrid}>
         {buttons.map((btn) => (
@@ -169,17 +186,17 @@ export default function DashboardScreen({ navigation }) {
       </View>
 
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Recent Transactions</Text>
+        <Text style={styles.sectionTitle}>{t("recentTransactions")}</Text>
         <TouchableOpacity onPress={() => navigation.navigate("ExpenseList")}>
-          <Text style={styles.seeAll}>See all</Text>
+          <Text style={styles.seeAll}>{t("seeAll")}</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.recentCard}>
         {recent.length === 0 ? (
           <View style={styles.emptyBox}>
-            <Text style={styles.emptyText}>No transactions yet</Text>
-            <Text style={styles.emptySubText}>Add your first expense!</Text>
+            <Text style={styles.emptyText}>{t("noTransactions")}</Text>
+            <Text style={styles.emptySubText}>{t("addFirstExpense")}</Text>
           </View>
         ) : (
           recent.map((item, index) => (
@@ -192,8 +209,8 @@ export default function DashboardScreen({ navigation }) {
                 <Text style={styles.txIconText}>{item.category_detail?.icon || item.category_detail?.name?.charAt(0)?.toUpperCase() || item.note?.charAt(0)?.toUpperCase() || item.type === "income" ? "+" : "-"}</Text>
               </View>
               <View style={styles.txInfo}>
-                <Text style={styles.txNote} numberOfLines={1}>{item.note || item.category?.name || "Expense"}</Text>
-                <Text style={styles.txDate}>{new Date(item.date).toLocaleDateString("en", { day: "numeric", month: "short" })}</Text>
+                <Text style={styles.txNote} numberOfLines={1}>{item.note || item.category?.name || t("expense")}</Text>
+                <Text style={styles.txDate}>{new Date(item.date).toLocaleDateString(language === "bn" ? "bn-BD" : "en", { day: "numeric", month: "short" })}</Text>
               </View>
               <Text style={[styles.txAmount, { color: getTypeColor(item.type) }]}>
                 {getTypeSign(item.type)} Tk {parseFloat(item.amount).toFixed(0)}
@@ -216,6 +233,13 @@ const styles = StyleSheet.create({
   avatarSmall:     { width: 44, height: 44, borderRadius: 22, backgroundColor: "#6366F1", justifyContent: "center", alignItems: "center", elevation: 3 },
   avatarSmallText: { fontSize: 20, fontWeight: "bold", color: "#fff" },
   avatarSmallImg:  { width: 44, height: 44, borderRadius: 22, elevation: 3 },
+
+  langToggle:      { flexDirection: "row", backgroundColor: "#e0e7ff", borderRadius: 20, padding: 3, marginRight: 10 },
+  langOption:      { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 18 },
+  langOptionActive:{ backgroundColor: "#6366F1" },
+  langText:        { fontSize: 12, color: "#6366F1", fontWeight: "700" },
+  langTextActive:  { color: "#fff" },
+
   balanceCard:     { backgroundColor: "#6366F1", marginHorizontal: 16, borderRadius: 20, padding: 20, marginBottom: 12, elevation: 4 },
   balanceLabel:    { color: "rgba(255,255,255,0.8)", fontSize: 13, marginBottom: 4 },
   balanceAmount:   { fontSize: 36, fontWeight: "bold", color: "#fff", marginBottom: 16 },
@@ -247,20 +271,3 @@ const styles = StyleSheet.create({
   txDate:          { fontSize: 12, color: "#9ca3af", marginTop: 2 },
   txAmount:        { fontSize: 15, fontWeight: "bold" },
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

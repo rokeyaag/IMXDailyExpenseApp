@@ -19,6 +19,7 @@ import AnalyticsScreen from "../screens/AnalyticsScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import CategoryScreen from "../screens/CategoryScreen";
 import ExpenseListScreen from "../screens/ExpenseListScreen";
+import ReportScreen from "../screens/ReportScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -51,6 +52,7 @@ export default function AppNavigator() {
             <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: true, title: "Profile" }} />
             <Stack.Screen name="Categories" component={CategoryScreen} options={{ headerShown: true, title: "Categories" }} />
             <Stack.Screen name="ExpenseList" component={ExpenseListScreen} options={{ headerShown: true, title: "All Transactions" }} />
+            <Stack.Screen name="Report" component={ReportScreen} options={{ headerShown: true, title: "Reports" }} />
           </>
         ) : (
           <>
@@ -62,7 +64,3 @@ export default function AppNavigator() {
     </NavigationContainer>
   );
 }
-
-
-
-

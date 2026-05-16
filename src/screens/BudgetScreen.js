@@ -2,8 +2,10 @@ import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, TextInput, Alert } from "react-native";
 import { expenseAPI, categoryAPI } from "../services/api";
 import api from "../services/api";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function BudgetScreen({ navigation }) {
+  const { t } = useLanguage();
   const [budgets, setBudgets] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,7 +33,7 @@ export default function BudgetScreen({ navigation }) {
 
   const handleAddBudget = async () => {
     if (!selectedCategory || !amount) {
-      Alert.alert("Error", "Please select category and enter amount");
+      Alert.alert(t("error"), t("amountRequired"));
       return;
     }
     try {
@@ -40,13 +42,13 @@ export default function BudgetScreen({ navigation }) {
         amount: parseFloat(amount),
         month, year,
       });
-      Alert.alert("Success", "Budget added!");
+      Alert.alert(t("success"), t("budgetSaved"));
       setShowAdd(false);
       setAmount("");
       setSelectedCategory(null);
       fetchData();
     } catch (e) {
-      Alert.alert("Error", "Something went wrong");
+      Alert.alert(t("error"), t("somethingWrong"));
     }
   };
 
@@ -55,57 +57,48 @@ export default function BudgetScreen({ navigation }) {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Budget</Text>
+        <Text style={styles.title}>{t("budget")}</Text>
         <TouchableOpacity style={styles.addBtn} onPress={() => setShowAdd(!showAdd)}>
-          <Text style={styles.addBtnText}>+ Add</Text>
+          <Text style={styles.addBtnText}>+ {t("add")}</Text>
         </TouchableOpacity>
       </View>
 
       {showAdd && (
         <View style={styles.addCard}>
-          <Text style={styles.addTitle}>Set Budget</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Amount (Tk)"
-            value={amount}
-            onChangeText={setAmount}
-            keyboardType="numeric"
-          />
-          <Text style={styles.label}>Select Category:</Text>
+          <Text style={styles.addTitle}>{t("setBudget")}</Text>
+          <TextInput style={styles.input} placeholder={t("budgetAmount") + " (Tk)"} placeholderTextColor="#9ca3af" value={amount} onChangeText={setAmount} keyboardType="numeric" />
+          <Text style={styles.label}>{t("selectCategory")}:</Text>
           <View style={styles.categoryGrid}>
             {categories.map((cat) => (
-              <TouchableOpacity
-                key={cat.id}
-                style={[styles.catBtn, selectedCategory === cat.id && { backgroundColor: cat.color }]}
-                onPress={() => setSelectedCategory(cat.id)}>
+              <TouchableOpacity key={cat.id} style={[styles.catBtn, selectedCategory === cat.id && { backgroundColor: cat.color }]} onPress={() => setSelectedCategory(cat.id)}>
                 <Text style={[styles.catText, selectedCategory === cat.id && { color: "#fff" }]}>{cat.name}</Text>
               </TouchableOpacity>
             ))}
           </View>
           <TouchableOpacity style={styles.saveBtn} onPress={handleAddBudget}>
-            <Text style={styles.saveBtnText}>Save Budget</Text>
+            <Text style={styles.saveBtnText}>{t("save")}</Text>
           </TouchableOpacity>
         </View>
       )}
 
       {budgets.length === 0 ? (
-        <Text style={styles.empty}>No budgets set yet</Text>
+        <Text style={styles.empty}>{t("noBudgetSet")}</Text>
       ) : (
         budgets.map((budget) => (
           <View key={budget.id} style={styles.budgetCard}>
             <View style={styles.budgetHeader}>
-              <Text style={styles.budgetName}>{budget.category_detail?.name || "Category"}</Text>
+              <Text style={styles.budgetName}>{budget.category_detail?.name || t("category")}</Text>
               <Text style={styles.budgetAmount}>Tk {budget.amount}</Text>
             </View>
             <View style={styles.progressBg}>
               <View style={[styles.progressFill, {
-                width: `${Math.min(budget.percentage, 100)}%`,
+                width: (Math.min(budget.percentage, 100)) + "%",
                 backgroundColor: budget.percentage > 90 ? "#EF4444" : budget.percentage > 70 ? "#F59E0B" : "#10B981"
               }]} />
             </View>
             <View style={styles.budgetFooter}>
-              <Text style={styles.budgetSpent}>Spent: Tk {budget.spent?.toFixed(0)}</Text>
-              <Text style={styles.budgetRemaining}>Left: Tk {budget.remaining?.toFixed(0)}</Text>
+              <Text style={styles.budgetSpent}>{t("used")}: Tk {budget.spent?.toFixed(0)}</Text>
+              <Text style={styles.budgetRemaining}>{t("remaining")}: Tk {budget.remaining?.toFixed(0)}</Text>
               <Text style={styles.budgetPct}>{budget.percentage}%</Text>
             </View>
           </View>
@@ -123,7 +116,7 @@ const styles = StyleSheet.create({
   addBtnText:       { color: "#fff", fontWeight: "bold" },
   addCard:          { backgroundColor: "#fff", margin: 16, borderRadius: 16, padding: 20 },
   addTitle:         { fontSize: 18, fontWeight: "bold", color: "#1f2937", marginBottom: 16 },
-  input:            { backgroundColor: "#f8f9fa", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 12, padding: 14, marginBottom: 16, fontSize: 16 },
+  input:            { backgroundColor: "#f8f9fa", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 12, padding: 14, marginBottom: 16, fontSize: 16, color: "#1f2937" },
   label:            { fontSize: 14, fontWeight: "500", color: "#1f2937", marginBottom: 10 },
   categoryGrid:     { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 },
   catBtn:           { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: "#e5e7eb", backgroundColor: "#f8f9fa" },

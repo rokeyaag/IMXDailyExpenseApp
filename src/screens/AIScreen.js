@@ -1,36 +1,112 @@
-import React, { useState, useRef } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, Animated } from "react-native";
+import React, { useState, useRef, useEffect } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, Animated, Easing, Platform, Alert } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from "expo-speech-recognition";
 import api from "../services/api";
 import Toast from "../components/Toast";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function AIScreen({ navigation }) {
-  const [text, setText] = useState("");
+  const { t } = useLanguage();
+  const [transcript, setTranscript] = useState("");
+  const [recording, setRecording] = useState(false);
+  const [language, setLanguage] = useState("bn-BD");
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState(null);
   const [confirming, setConfirming] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: "", type: "success" });
-  const cardAnim = useRef(new Animated.Value(0)).current;
+
+  const ring1 = useRef(new Animated.Value(0)).current;
+  const ring2 = useRef(new Animated.Value(0)).current;
+  const ring3 = useRef(new Animated.Value(0)).current;
+  const micScale = useRef(new Animated.Value(1)).current;
 
   const showToast = (message, type = "success") => setToast({ visible: true, message, type });
 
-  const examples = [
-    { text: "lunch 150 taka", icon: "FD" },
-    { text: "rickshaw 50 taka", icon: "TR" },
-    { text: "salary received 25000", icon: "SL" },
-    { text: "electricity bill 1200", icon: "BL" },
-    { text: "medicine 500 taka", icon: "HL" },
-  ];
+  useSpeechRecognitionEvent("start", () => { setRecording(true); });
+  useSpeechRecognitionEvent("end", () => { setRecording(false); stopRingAnimation(); });
+  useSpeechRecognitionEvent("result", (event) => {
+    if (event.results && event.results[0]) {
+      setTranscript(event.results[0].transcript);
+    }
+  });
+  useSpeechRecognitionEvent("error", (event) => {
+    setRecording(false);
+    stopRingAnimation();
+    showToast("Voice error: " + (event.message || event.error || "try again"), "error");
+  });
+
+  const startRingAnimation = () => {
+    const createRingLoop = (anim, delay) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(anim, { toValue: 1, duration: 2000, easing: Easing.out(Easing.ease), useNativeDriver: true }),
+        ])
+      );
+    ring1.setValue(0); ring2.setValue(0); ring3.setValue(0);
+    createRingLoop(ring1, 0).start();
+    createRingLoop(ring2, 600).start();
+    createRingLoop(ring3, 1200).start();
+    Animated.spring(micScale, { toValue: 1.1, friction: 4, useNativeDriver: true }).start();
+  };
+
+  const stopRingAnimation = () => {
+    ring1.stopAnimation(); ring2.stopAnimation(); ring3.stopAnimation();
+    ring1.setValue(0); ring2.setValue(0); ring3.setValue(0);
+    Animated.spring(micScale, { toValue: 1, friction: 4, useNativeDriver: true }).start();
+  };
+
+  const requestPermissions = async () => {
+    try {
+      const result = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+      if (!result.granted) {
+        Alert.alert("Permission Required", "Microphone permission lagbe voice use korar jonno.");
+        return false;
+      }
+      return true;
+    } catch (e) {
+      showToast("Permission error", "error");
+      return false;
+    }
+  };
+
+  const startRecording = async () => {
+    if (recording) { stopRecording(); return; }
+    const hasPermission = await requestPermissions();
+    if (!hasPermission) return;
+    setTranscript("");
+    setPreview(null);
+    startRingAnimation();
+    try {
+      ExpoSpeechRecognitionModule.start({
+        lang: language,
+        interimResults: true,
+        continuous: false,
+        requiresOnDeviceRecognition: false,
+        addsPunctuation: false,
+        androidIntentOptions: { EXTRA_LANGUAGE_MODEL: "free_form" },
+      });
+    } catch (e) {
+      stopRingAnimation();
+      showToast("Voice start hoyni: " + e.message, "error");
+    }
+  };
+
+  const stopRecording = () => {
+    try { ExpoSpeechRecognitionModule.stop(); } catch (e) {}
+    stopRingAnimation();
+  };
 
   const handleAIParse = async () => {
-    if (!text.trim()) { showToast("Please enter some text", "error"); return; }
+    if (!transcript.trim()) { showToast(t("sayFirst"), "error"); return; }
     setLoading(true);
     setPreview(null);
     try {
-      const res = await api.post("/api/ai/add-expense/", { text, action: "parse" });
+      const res = await api.post("/api/ai/add-expense/", { text: transcript, action: "parse" });
       setPreview(res.data.parsed);
-      Animated.spring(cardAnim, { toValue: 1, useNativeDriver: true, tension: 50, friction: 8 }).start();
     } catch (e) {
-      showToast(e.response?.data?.error || "Something went wrong", "error");
+      showToast(e.response?.data?.error || t("somethingWrong"), "error");
     } finally {
       setLoading(false);
     }
@@ -39,160 +115,186 @@ export default function AIScreen({ navigation }) {
   const handleConfirm = async () => {
     setConfirming(true);
     try {
-      await api.post("/api/ai/add-expense/", { text, action: "confirm", parsed: preview });
-      showToast("Transaction added successfully!");
-      setText("");
+      await api.post("/api/ai/add-expense/", { text: transcript, action: "confirm", parsed: preview });
+      showToast(t("savedSuccess"));
+      setTranscript("");
       setPreview(null);
-      cardAnim.setValue(0);
-      setTimeout(() => { navigation.navigate("Dashboard", { refresh: Date.now() }); }, 2000);
+      setTimeout(() => { navigation.navigate("Dashboard", { refresh: Date.now() }); }, 1500);
     } catch (e) {
-      showToast("Failed to save", "error");
+      showToast(t("saveFailed"), "error");
     } finally {
       setConfirming(false);
     }
   };
 
-  const handleEdit = (field, value) => {
-    setPreview(prev => ({ ...prev, [field]: value }));
+  const handleReset = () => {
+    setTranscript("");
+    setPreview(null);
+    if (recording) stopRecording();
   };
 
   const typeColor = preview?.type === "income" ? "#10B981" : "#EF4444";
 
+  const ringStyle = (anim) => ({
+    transform: [{ scale: anim.interpolate({ inputRange: [0, 1], outputRange: [1, 2.2] }) }],
+    opacity: anim.interpolate({ inputRange: [0, 1], outputRange: [0.6, 0] }),
+  });
+
   return (
-    <View style={{ flex: 1 }}>
+    <LinearGradient colors={["#667eea", "#764ba2"]} style={styles.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
       <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={() => setToast({ ...toast, visible: false })} />
-      <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
-          <Text style={styles.title}>AI Entry</Text>
-          <Text style={styles.subtitle}>Type in Bengali or English</Text>
-        </View>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
 
-        <Text style={styles.sectionLabel}>Quick Examples</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.examplesRow}>
-          {examples.map((ex, i) => (
-            <TouchableOpacity key={i} style={styles.exampleChip} onPress={() => setText(ex.text)}>
-              <View style={styles.exampleIcon}><Text style={styles.exampleIconText}>{ex.icon}</Text></View>
-              <Text style={styles.exampleText}>{ex.text}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        <View style={styles.inputCard}>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g. lunch 200 taka, salary 25000..."
-            placeholderTextColor="#9ca3af"
-            value={text}
-            onChangeText={setText}
-            multiline
-            numberOfLines={3}
-            color="#1f2937"
-          />
-          <TouchableOpacity
-            style={[styles.parseBtn, loading && { opacity: 0.7 }]}
-            onPress={handleAIParse}
-            disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.parseBtnText}>Analyze with AI</Text>}
-          </TouchableOpacity>
-        </View>
-
-        {preview && (
-          <Animated.View style={[styles.previewCard, { opacity: cardAnim, transform: [{ scale: cardAnim }] }]}>
-            <View style={[styles.previewHeader, { backgroundColor: typeColor }]}>
-              <Text style={styles.previewHeaderText}>AI Preview</Text>
-              <View style={styles.confidenceBadge}>
-                <Text style={styles.confidenceText}>{preview.confidence || "medium"}</Text>
-              </View>
+        {!preview && (
+          <>
+            <View style={styles.langToggle}>
+              <TouchableOpacity
+                style={[styles.langPill, language === "en-US" && styles.langPillActive]}
+                onPress={() => !recording && setLanguage("en-US")}
+                activeOpacity={0.7}>
+                <Text style={[styles.langText, language === "en-US" && styles.langTextActive]}>EN</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.langPill, language === "bn-BD" && styles.langPillActive]}
+                onPress={() => !recording && setLanguage("bn-BD")}
+                activeOpacity={0.7}>
+                <Text style={[styles.langText, language === "bn-BD" && styles.langTextActive]}>বাংলা</Text>
+              </TouchableOpacity>
             </View>
-            <View style={styles.previewBody}>
-              <Text style={styles.fieldLabel}>Type</Text>
-              <View style={styles.typeRow}>
-                {["expense", "income"].map(t => (
-                  <TouchableOpacity
-                    key={t}
-                    style={[styles.typeBtn, preview.type === t && { backgroundColor: t === "income" ? "#10B981" : "#EF4444", borderColor: t === "income" ? "#10B981" : "#EF4444" }]}
-                    onPress={() => handleEdit("type", t)}>
-                    <Text style={[styles.typeBtnText, preview.type === t && { color: "#fff" }]}>
-                      {t === "income" ? "Income" : "Expense"}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
 
-              <Text style={styles.fieldLabel}>Amount (Tk)</Text>
-              <TextInput
-                style={styles.editInput}
-                value={String(preview.amount)}
-                onChangeText={(v) => handleEdit("amount", parseFloat(v) || 0)}
-                keyboardType="numeric"
-                color="#1f2937"
-              />
+            <Text style={styles.heading}>
+              {recording ? t("listening") : t("tapToSpeak")}
+            </Text>
+            <Text style={styles.subheading}>
+              {language === "bn-BD" ? t("speakInBangla") : t("speakInEnglish")}
+            </Text>
 
-              <Text style={styles.fieldLabel}>Note</Text>
-              <TextInput
-                style={styles.editInput}
-                value={preview.note}
-                onChangeText={(v) => handleEdit("note", v)}
-                color="#1f2937"
-              />
+            <View style={styles.micWrapper}>
+              {recording && (
+                <>
+                  <Animated.View style={[styles.ring, ringStyle(ring1)]} />
+                  <Animated.View style={[styles.ring, ringStyle(ring2)]} />
+                  <Animated.View style={[styles.ring, ringStyle(ring3)]} />
+                </>
+              )}
+              <Animated.View style={{ transform: [{ scale: micScale }] }}>
+                <TouchableOpacity
+                  style={[styles.micBtn, recording && styles.micBtnActive]}
+                  onPress={startRecording}
+                  activeOpacity={0.85}>
+                  <Text style={styles.micIcon}>{recording ? "■" : "\ud83c\udfa4"}</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            </View>
 
-              <Text style={styles.fieldLabel}>Category</Text>
-              <View style={styles.categoryBadge}>
-                <Text style={styles.categoryBadgeText}>{preview.category_name || preview.category_hint || "None"}</Text>
-              </View>
+            <View style={styles.transcriptCard}>
+              <Text style={styles.transcriptLabel}>
+                {transcript ? t("youSaid") : "Example: 100 taka cha kheyechi"}
+              </Text>
+              {transcript ? (
+                <Text style={styles.transcriptText}>{transcript}</Text>
+              ) : (
+                <Text style={styles.transcriptHint}>
+                  {recording ? t("liveListening") : t("tapMic")}
+                </Text>
+              )}
+            </View>
 
+            {transcript.trim() && !recording && (
               <View style={styles.actionRow}>
-                <TouchableOpacity style={styles.cancelBtn} onPress={() => { setPreview(null); cardAnim.setValue(0); }}>
-                  <Text style={styles.cancelBtnText}>Cancel</Text>
+                <TouchableOpacity style={styles.resetBtn} onPress={handleReset} activeOpacity={0.8}>
+                  <Text style={styles.resetBtnText}>{t("reset")}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.confirmBtn, { backgroundColor: typeColor }]}
-                  onPress={handleConfirm}
-                  disabled={confirming}>
-                  {confirming ? <ActivityIndicator color="#fff" /> : <Text style={styles.confirmBtnText}>Confirm & Save</Text>}
+                  style={[styles.nextBtn, loading && styles.btnDisabled]}
+                  onPress={handleAIParse}
+                  disabled={loading}
+                  activeOpacity={0.85}>
+                  {loading ? <ActivityIndicator color="#667eea" size="small" /> : <Text style={styles.nextBtnText}>{t("next")}</Text>}
                 </TouchableOpacity>
               </View>
-            </View>
-          </Animated.View>
+            )}
+          </>
         )}
-        <View style={{ height: 40 }} />
+
+        {preview && (
+          <View style={styles.previewBox}>
+            <Text style={styles.previewTitle}>{t("check")}</Text>
+            <View style={styles.previewRow}>
+              <Text style={styles.previewLabel}>{t("type")}</Text>
+              <Text style={[styles.previewValue, { color: typeColor }]}>
+                {preview.type === "income" ? t("income") : t("expense")}
+              </Text>
+            </View>
+            <View style={styles.previewRow}>
+              <Text style={styles.previewLabel}>{t("taka")}</Text>
+              <Text style={[styles.previewAmount, { color: typeColor }]}>{preview.amount} Tk</Text>
+            </View>
+            <View style={styles.previewRow}>
+              <Text style={styles.previewLabel}>{t("what")}</Text>
+              <Text style={styles.previewValue}>{preview.note || "-"}</Text>
+            </View>
+            <View style={[styles.previewRow, styles.previewRowLast]}>
+              <Text style={styles.previewLabel}>{t("category")}</Text>
+              <Text style={styles.previewValue}>{preview.category_name || preview.category_hint || "Other"}</Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.confirmBtn, { backgroundColor: typeColor }]}
+              onPress={handleConfirm}
+              disabled={confirming}
+              activeOpacity={0.85}>
+              {confirming ? <ActivityIndicator color="#fff" size="large" /> : <Text style={styles.confirmBtnText}>{t("saveItNow")}</Text>}
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.cancelBtn} onPress={handleReset} activeOpacity={0.7}>
+              <Text style={styles.cancelBtnText}>{t("speakAgain")}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container:         { flex: 1, backgroundColor: "#f0f0ff" },
-  header:            { padding: 20, paddingTop: 52, paddingBottom: 8 },
-  title:             { fontSize: 26, fontWeight: "bold", color: "#1f2937" },
-  subtitle:          { fontSize: 14, color: "#6b7280", marginTop: 4 },
-  sectionLabel:      { fontSize: 14, fontWeight: "600", color: "#374151", paddingHorizontal: 20, marginBottom: 8, marginTop: 8 },
-  examplesRow:       { paddingHorizontal: 16, marginBottom: 16 },
-  exampleChip:       { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginRight: 8, elevation: 2, gap: 8 },
-  exampleIcon:       { width: 28, height: 28, borderRadius: 14, backgroundColor: "#6366F1", justifyContent: "center", alignItems: "center" },
-  exampleIconText:   { fontSize: 10, fontWeight: "bold", color: "#fff" },
-  exampleText:       { fontSize: 12, color: "#374151", fontWeight: "500" },
-  inputCard:         { backgroundColor: "#fff", marginHorizontal: 16, borderRadius: 20, padding: 16, elevation: 2, marginBottom: 16 },
-  input:             { fontSize: 16, color: "#1f2937", minHeight: 80, textAlignVertical: "top", marginBottom: 12 },
-  parseBtn:          { backgroundColor: "#6366F1", borderRadius: 14, padding: 16, alignItems: "center", elevation: 3 },
-  parseBtnText:      { color: "#fff", fontSize: 16, fontWeight: "bold" },
-  previewCard:       { marginHorizontal: 16, borderRadius: 20, overflow: "hidden", elevation: 4, marginBottom: 16 },
-  previewHeader:     { padding: 16, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  previewHeaderText: { color: "#fff", fontWeight: "bold", fontSize: 15 },
-  confidenceBadge:   { backgroundColor: "rgba(255,255,255,0.25)", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
-  confidenceText:    { color: "#fff", fontSize: 11, fontWeight: "600" },
-  previewBody:       { backgroundColor: "#fff", padding: 20 },
-  fieldLabel:        { fontSize: 12, fontWeight: "600", color: "#6b7280", marginBottom: 6, marginTop: 12 },
-  typeRow:           { flexDirection: "row", gap: 10 },
-  typeBtn:           { flex: 1, padding: 10, borderRadius: 10, borderWidth: 1.5, borderColor: "#e5e7eb", alignItems: "center" },
-  typeBtnText:       { fontSize: 14, fontWeight: "600", color: "#6b7280" },
-  editInput:         { backgroundColor: "#f8f9ff", borderWidth: 1.5, borderColor: "#e5e7eb", borderRadius: 10, padding: 12, fontSize: 15, color: "#1f2937" },
-  categoryBadge:     { backgroundColor: "#ede9fe", paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, alignSelf: "flex-start" },
-  categoryBadgeText: { color: "#6366F1", fontWeight: "600", fontSize: 14 },
-  actionRow:         { flexDirection: "row", gap: 12, marginTop: 20 },
-  cancelBtn:         { flex: 1, backgroundColor: "#f3f4f6", borderRadius: 12, padding: 14, alignItems: "center" },
-  cancelBtnText:     { color: "#6b7280", fontWeight: "bold" },
-  confirmBtn:        { flex: 2, borderRadius: 12, padding: 14, alignItems: "center", elevation: 3 },
-  confirmBtnText:    { color: "#fff", fontWeight: "bold", fontSize: 15 },
-});
+  gradient: { flex: 1 },
+  content: { flexGrow: 1, padding: 24, paddingTop: 20, paddingBottom: 40, alignItems: "center" },
 
+  langToggle: { flexDirection: "row", backgroundColor: "rgba(255,255,255,0.18)", borderRadius: 30, padding: 4, marginBottom: 30, borderWidth: 1, borderColor: "rgba(255,255,255,0.25)" },
+  langPill: { paddingHorizontal: 24, paddingVertical: 10, borderRadius: 26 },
+  langPillActive: { backgroundColor: "#fff" },
+  langText: { color: "rgba(255,255,255,0.85)", fontSize: 15, fontWeight: "600" },
+  langTextActive: { color: "#667eea" },
+
+  heading: { fontSize: 32, fontWeight: "700", color: "#fff", textAlign: "center", marginBottom: 8 },
+  subheading: { fontSize: 16, color: "rgba(255,255,255,0.75)", textAlign: "center", marginBottom: 40 },
+
+  micWrapper: { width: 220, height: 220, justifyContent: "center", alignItems: "center", marginBottom: 30 },
+  ring: { position: "absolute", width: 160, height: 160, borderRadius: 80, borderWidth: 2, borderColor: "rgba(255,255,255,0.5)" },
+  micBtn: { width: 160, height: 160, borderRadius: 80, backgroundColor: "#fff", justifyContent: "center", alignItems: "center", elevation: 16, shadowColor: "#000", shadowOpacity: 0.3, shadowRadius: 20, shadowOffset: { width: 0, height: 8 } },
+  micBtnActive: { backgroundColor: "#fee2e2" },
+  micIcon: { fontSize: 64 },
+
+  transcriptCard: { width: "100%", backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 20, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: "rgba(255,255,255,0.25)", minHeight: 100 },
+  transcriptLabel: { fontSize: 13, color: "rgba(255,255,255,0.75)", marginBottom: 8, fontWeight: "600", letterSpacing: 0.5 },
+  transcriptText: { fontSize: 20, color: "#fff", lineHeight: 28, fontWeight: "500" },
+  transcriptHint: { fontSize: 16, color: "rgba(255,255,255,0.6)", fontStyle: "italic" },
+
+  actionRow: { flexDirection: "row", width: "100%", gap: 12 },
+  resetBtn: { flex: 1, backgroundColor: "rgba(255,255,255,0.18)", borderRadius: 16, padding: 18, alignItems: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.3)" },
+  resetBtnText: { color: "#fff", fontSize: 17, fontWeight: "600" },
+  nextBtn: { flex: 2, backgroundColor: "#fff", borderRadius: 16, padding: 18, alignItems: "center", elevation: 8 },
+  nextBtnText: { color: "#667eea", fontSize: 18, fontWeight: "700" },
+  btnDisabled: { opacity: 0.6 },
+
+  previewBox: { width: "100%", backgroundColor: "#fff", borderRadius: 24, padding: 28, marginTop: 20, elevation: 12, shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 20, shadowOffset: { width: 0, height: 8 } },
+  previewTitle: { fontSize: 26, fontWeight: "700", color: "#1f2937", textAlign: "center", marginBottom: 24 },
+  previewRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: "#f3f4f6" },
+  previewRowLast: { borderBottomWidth: 0 },
+  previewLabel: { fontSize: 15, color: "#6b7280", fontWeight: "600" },
+  previewValue: { fontSize: 17, color: "#1f2937", fontWeight: "600", maxWidth: "60%", textAlign: "right" },
+  previewAmount: { fontSize: 26, fontWeight: "700" },
+  confirmBtn: { borderRadius: 16, padding: 18, alignItems: "center", marginTop: 24, elevation: 6 },
+  confirmBtnText: { color: "#fff", fontSize: 20, fontWeight: "700", letterSpacing: 0.5 },
+  cancelBtn: { padding: 14, alignItems: "center", marginTop: 8 },
+  cancelBtnText: { color: "#6b7280", fontSize: 15, fontWeight: "600" },
+});

@@ -2,8 +2,10 @@ import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, ScrollView, Platform, Modal, FlatList } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { expenseAPI, categoryAPI } from "../services/api";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function EditExpenseScreen({ navigation, route }) {
+  const { t } = useLanguage();
   const { expense } = route.params;
   const [type, setType] = useState(expense.type);
   const [amount, setAmount] = useState(expense.amount.toString());
@@ -12,7 +14,7 @@ export default function EditExpenseScreen({ navigation, route }) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(expense.category);
-  const [selectedCategoryName, setSelectedCategoryName] = useState("Select Category");
+  const [selectedCategoryName, setSelectedCategoryName] = useState(t("selectCategory"));
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -21,19 +23,19 @@ export default function EditExpenseScreen({ navigation, route }) {
       const cats = res.data.results || res.data;
       setCategories(cats);
       const current = cats.find(c => c.id === expense.category);
-      if (current) setSelectedCategoryName(`${current.icon} ${current.name}`);
+      if (current) setSelectedCategoryName(current.icon + " " + current.name);
     });
   }, []);
 
   const handleUpdate = async () => {
-    if (!amount) { Alert.alert("Error", "Please enter amount"); return; }
+    if (!amount) { Alert.alert(t("error"), t("amountRequired")); return; }
     setLoading(true);
     try {
       const dateStr = date.toISOString().split("T")[0];
       await expenseAPI.update(expense.id, { type, amount, note, date: dateStr, category: selectedCategory });
-      Alert.alert("Success", "Transaction updated!");
+      Alert.alert(t("success"), t("transactionUpdated"));
       navigation.goBack();
-    } catch (e) { Alert.alert("Error", "Something went wrong"); }
+    } catch (e) { Alert.alert(t("error"), t("somethingWrong")); }
     finally { setLoading(false); }
   };
 
@@ -42,88 +44,64 @@ export default function EditExpenseScreen({ navigation, route }) {
     if (selectedDate) setDate(selectedDate);
   };
 
-  const formatDate = (d) => {
-    return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-  };
+  const formatDate = (d) => d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 
   const selectCategory = (cat) => {
     setSelectedCategory(cat.id);
-    setSelectedCategoryName(`${cat.icon} ${cat.name}`);
+    setSelectedCategoryName(cat.icon + " " + cat.name);
     setShowCategoryModal(false);
   };
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>Edit Transaction</Text>
+      <Text style={styles.title}>{t("editTransaction")}</Text>
 
       <View style={styles.typeRow}>
-        <TouchableOpacity
-          style={[styles.typeBtn, type === "expense" && styles.typeBtnExpense]}
-          onPress={() => setType("expense")}>
-          <Text style={[styles.typeBtnText, type === "expense" && styles.typeBtnTextActive]}>Expense</Text>
+        <TouchableOpacity style={[styles.typeBtn, type === "expense" && styles.typeBtnExpense]} onPress={() => setType("expense")}>
+          <Text style={[styles.typeBtnText, type === "expense" && styles.typeBtnTextActive]}>{t("expense")}</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.typeBtn, type === "income" && styles.typeBtnIncome]}
-          onPress={() => setType("income")}>
-          <Text style={[styles.typeBtnText, type === "income" && styles.typeBtnTextActive]}>Income</Text>
+        <TouchableOpacity style={[styles.typeBtn, type === "income" && styles.typeBtnIncome]} onPress={() => setType("income")}>
+          <Text style={[styles.typeBtnText, type === "income" && styles.typeBtnTextActive]}>{t("income")}</Text>
         </TouchableOpacity>
       </View>
 
-      <TextInput style={styles.input} placeholder="Amount (Tk)" placeholderTextColor="#9ca3af" value={amount} onChangeText={setAmount} keyboardType="numeric" color="#1f2937" />
-      <TextInput style={styles.input} placeholder="Note (optional)" placeholderTextColor="#9ca3af" value={note} onChangeText={setNote} color="#1f2937" />
+      <TextInput style={styles.input} placeholder={t("enterAmount") + " (Tk)"} placeholderTextColor="#9ca3af" value={amount} onChangeText={setAmount} keyboardType="numeric" />
+      <TextInput style={styles.input} placeholder={t("enterNote")} placeholderTextColor="#9ca3af" value={note} onChangeText={setNote} />
 
       <TouchableOpacity style={styles.dateBtn} onPress={() => setShowDatePicker(true)}>
-        <Text style={styles.dateBtnLabel}>Date</Text>
+        <Text style={styles.dateBtnLabel}>{t("date")}</Text>
         <Text style={styles.dateBtnValue}>{formatDate(date)}</Text>
       </TouchableOpacity>
 
-      {showDatePicker && (
-        <DateTimePicker
-          value={date}
-          mode="date"
-          display="default"
-          onChange={onDateChange}
-          maximumDate={new Date()}
-        />
-      )}
+      {showDatePicker && (<DateTimePicker value={date} mode="date" display="default" onChange={onDateChange} maximumDate={new Date()} />)}
 
       <View style={styles.categoryHeader}>
-        <Text style={styles.label}>Category</Text>
+        <Text style={styles.label}>{t("category")}</Text>
       </View>
 
       <TouchableOpacity style={styles.dropdownBtn} onPress={() => setShowCategoryModal(true)}>
         <Text style={[styles.dropdownText, !selectedCategory && { color: "#9ca3af" }]}>{selectedCategoryName}</Text>
-        <Text style={styles.dropdownArrow}>?</Text>
+        <Text style={styles.dropdownArrow}>v</Text>
       </TouchableOpacity>
 
       <Modal visible={showCategoryModal} transparent animationType="slide">
         <TouchableOpacity style={styles.modalOverlay} onPress={() => setShowCategoryModal(false)}>
           <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Select Category</Text>
-            <FlatList
-              data={categories}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[styles.modalItem, selectedCategory === item.id && { backgroundColor: item.color + "20" }]}
-                  onPress={() => selectCategory(item)}>
-                  <View style={[styles.modalIconBox, { backgroundColor: item.color || "#6366F1" }]}>
-                    <Text style={styles.modalIcon}>{item.icon}</Text>
-                  </View>
-                  <Text style={styles.modalItemText}>{item.name}</Text>
-                  {selectedCategory === item.id && <Text style={styles.checkMark}>?</Text>}
-                </TouchableOpacity>
-              )}
-            />
+            <Text style={styles.modalTitle}>{t("selectCategory")}</Text>
+            <FlatList data={categories} keyExtractor={(item) => item.id.toString()} renderItem={({ item }) => (
+              <TouchableOpacity style={[styles.modalItem, selectedCategory === item.id && { backgroundColor: (item.color || "#6366F1") + "20" }]} onPress={() => selectCategory(item)}>
+                <View style={[styles.modalIconBox, { backgroundColor: item.color || "#6366F1" }]}>
+                  <Text style={styles.modalIcon}>{item.icon}</Text>
+                </View>
+                <Text style={styles.modalItemText}>{item.name}</Text>
+              </TouchableOpacity>
+            )} />
           </View>
         </TouchableOpacity>
       </Modal>
 
-      <TouchableOpacity
-        style={[styles.saveBtn, type === "income" && { backgroundColor: "#10B981" }]}
-        onPress={handleUpdate}
-        disabled={loading}>
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Update</Text>}
+      <TouchableOpacity style={[styles.saveBtn, type === "income" && { backgroundColor: "#10B981" }]} onPress={handleUpdate} disabled={loading}>
+        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>{t("update")}</Text>}
       </TouchableOpacity>
     </ScrollView>
   );
@@ -154,7 +132,6 @@ const styles = StyleSheet.create({
   modalIconBox:       { width: 40, height: 40, borderRadius: 20, justifyContent: "center", alignItems: "center", marginRight: 12 },
   modalIcon:          { fontSize: 18 },
   modalItemText:      { flex: 1, fontSize: 15, color: "#1f2937", fontWeight: "500" },
-  checkMark:          { fontSize: 16, color: "#10B981", fontWeight: "bold" },
   saveBtn:            { backgroundColor: "#6366F1", borderRadius: 12, padding: 16, alignItems: "center", marginBottom: 40 },
   saveBtnText:        { color: "#fff", fontSize: 16, fontWeight: "bold" },
 });

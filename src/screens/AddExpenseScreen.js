@@ -3,8 +3,10 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator,
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { expenseAPI, categoryAPI } from "../services/api";
 import Toast from "../components/Toast";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function AddExpenseScreen({ navigation, route }) {
+  const { t } = useLanguage();
   const defaultType = route?.params?.defaultType || "expense";
   const [type, setType] = useState(defaultType);
   const [amount, setAmount] = useState("");
@@ -26,14 +28,14 @@ export default function AddExpenseScreen({ navigation, route }) {
   };
 
   const handleSave = async () => {
-    if (!amount) { showToast("Please enter amount", "error"); return; }
+    if (!amount) { showToast(t("amountRequired"), "error"); return; }
     setLoading(true);
     try {
       const dateStr = date.toISOString().split("T")[0];
       await expenseAPI.create({ type, amount, note, date: dateStr, category: selectedCategory?.id || null });
-      showToast("Transaction added successfully!");
+      showToast(t("transactionSaved"));
       setTimeout(() => { navigation.navigate("Dashboard", { refresh: Date.now() }); }, 2000);
-    } catch (e) { showToast("Something went wrong", "error"); }
+    } catch (e) { showToast(t("somethingWrong"), "error"); }
     finally { setLoading(false); }
   };
 
@@ -46,65 +48,37 @@ export default function AddExpenseScreen({ navigation, route }) {
 
   return (
     <View style={{ flex: 1 }}>
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onHide={() => setToast({ ...toast, visible: false })}
-      />
+      <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={() => setToast({ ...toast, visible: false })} />
       <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>New Transaction</Text>
+        <Text style={styles.title}>{t("newTransaction")}</Text>
 
         <View style={styles.typeRow}>
-          <TouchableOpacity
-            style={[styles.typeBtn, type === "expense" && styles.typeBtnExpense]}
-            onPress={() => setType("expense")}>
-            <Text style={[styles.typeBtnText, type === "expense" && styles.typeBtnTextActive]}>Expense</Text>
+          <TouchableOpacity style={[styles.typeBtn, type === "expense" && styles.typeBtnExpense]} onPress={() => setType("expense")}>
+            <Text style={[styles.typeBtnText, type === "expense" && styles.typeBtnTextActive]}>{t("expense")}</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.typeBtn, type === "income" && styles.typeBtnIncome]}
-            onPress={() => setType("income")}>
-            <Text style={[styles.typeBtnText, type === "income" && styles.typeBtnTextActive]}>Income</Text>
+          <TouchableOpacity style={[styles.typeBtn, type === "income" && styles.typeBtnIncome]} onPress={() => setType("income")}>
+            <Text style={[styles.typeBtnText, type === "income" && styles.typeBtnTextActive]}>{t("income")}</Text>
           </TouchableOpacity>
         </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Enter amount (Tk)"
-          placeholderTextColor="#9ca3af"
-          value={amount}
-          onChangeText={setAmount}
-          keyboardType="numeric"
-          color="#1f2937"
-        />
+        <TextInput style={styles.input} placeholder={t("enterAmount") + " (Tk)"} placeholderTextColor="#9ca3af" value={amount} onChangeText={setAmount} keyboardType="numeric" />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Add a note (optional)"
-          placeholderTextColor="#9ca3af"
-          value={note}
-          onChangeText={setNote}
-          color="#1f2937"
-        />
+        <TextInput style={styles.input} placeholder={t("enterNote")} placeholderTextColor="#9ca3af" value={note} onChangeText={setNote} />
 
         <TouchableOpacity style={styles.dateBtn} onPress={() => setShowDatePicker(true)}>
-          <Text style={styles.dateBtnLabel}>Date</Text>
+          <Text style={styles.dateBtnLabel}>{t("date")}</Text>
           <Text style={styles.dateBtnValue}>{formatDate(date)}</Text>
         </TouchableOpacity>
-        {showDatePicker && (
-          <DateTimePicker value={date} mode="date" display="default" onChange={onDateChange} maximumDate={new Date()} />
-        )}
+        {showDatePicker && (<DateTimePicker value={date} mode="date" display="default" onChange={onDateChange} maximumDate={new Date()} />)}
 
         <View style={styles.categoryHeader}>
-          <Text style={styles.label}>Category</Text>
+          <Text style={styles.label}>{t("category")}</Text>
           <TouchableOpacity style={styles.newCatBtn} onPress={() => navigation.navigate("Categories")}>
-            <Text style={styles.newCatBtnText}>+ New</Text>
+            <Text style={styles.newCatBtnText}>+ {t("add")}</Text>
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          style={[styles.dropdownBtn, selectedCategory && { borderColor: selectedCategory.color || "#6366F1" }]}
-          onPress={() => setShowDropdown(true)}>
+        <TouchableOpacity style={[styles.dropdownBtn, selectedCategory && { borderColor: selectedCategory.color || "#6366F1" }]} onPress={() => setShowDropdown(true)}>
           {selectedCategory ? (
             <View style={styles.dropdownSelected}>
               <View style={[styles.dropdownIconBox, { backgroundColor: selectedCategory.color || "#6366F1" }]}>
@@ -112,9 +86,7 @@ export default function AddExpenseScreen({ navigation, route }) {
               </View>
               <Text style={styles.dropdownSelectedText}>{selectedCategory.name}</Text>
             </View>
-          ) : (
-            <Text style={styles.dropdownPlaceholder}>Select a category...</Text>
-          )}
+          ) : (<Text style={styles.dropdownPlaceholder}>{t("selectCategory")}</Text>)}
           <Text style={styles.dropdownArrow}>v</Text>
         </TouchableOpacity>
 
@@ -122,37 +94,27 @@ export default function AddExpenseScreen({ navigation, route }) {
           <TouchableOpacity style={styles.modalOverlay} onPress={() => setShowDropdown(false)} activeOpacity={1}>
             <View style={styles.modalBox}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Select Category</Text>
+                <Text style={styles.modalTitle}>{t("selectCategory")}</Text>
                 <TouchableOpacity onPress={() => setShowDropdown(false)}>
                   <Text style={styles.modalClose}>X</Text>
                 </TouchableOpacity>
               </View>
-              <FlatList
-                data={categories}
-                keyExtractor={(item) => item.id.toString()}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={[styles.dropdownItem, selectedCategory?.id === item.id && styles.dropdownItemActive]}
-                    onPress={() => { setSelectedCategory(item); setShowDropdown(false); }}>
-                    <View style={[styles.dropdownItemIcon, { backgroundColor: item.color || "#6366F1" }]}>
-                      <Text style={styles.dropdownItemIconText}>{item.icon || item.name?.charAt(0)}</Text>
-                    </View>
-                    <Text style={[styles.dropdownItemText, selectedCategory?.id === item.id && { color: "#6366F1", fontWeight: "700" }]}>
-                      {item.name}
-                    </Text>
-                    {selectedCategory?.id === item.id && <Text style={styles.checkMark}>?</Text>}
-                  </TouchableOpacity>
-                )}
-              />
+              <FlatList data={categories} keyExtractor={(item) => item.id.toString()} renderItem={({ item }) => (
+                <TouchableOpacity style={[styles.dropdownItem, selectedCategory?.id === item.id && styles.dropdownItemActive]} onPress={() => { setSelectedCategory(item); setShowDropdown(false); }}>
+                  <View style={[styles.dropdownItemIcon, { backgroundColor: item.color || "#6366F1" }]}>
+                    <Text style={styles.dropdownItemIconText}>{item.icon || item.name?.charAt(0)}</Text>
+                  </View>
+                  <Text style={[styles.dropdownItemText, selectedCategory?.id === item.id && { color: "#6366F1", fontWeight: "700" }]}>
+                    {item.name}
+                  </Text>
+                </TouchableOpacity>
+              )} />
             </View>
           </TouchableOpacity>
         </Modal>
 
-        <TouchableOpacity
-          style={[styles.saveBtn, { backgroundColor: type === "income" ? "#10B981" : "#EF4444" }]}
-          onPress={handleSave}
-          disabled={loading}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Save Transaction</Text>}
+        <TouchableOpacity style={[styles.saveBtn, { backgroundColor: type === "income" ? "#10B981" : "#EF4444" }]} onPress={handleSave} disabled={loading}>
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>{t("save")}</Text>}
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -193,8 +155,6 @@ const styles = StyleSheet.create({
   dropdownItemIcon:     { width: 40, height: 40, borderRadius: 20, justifyContent: "center", alignItems: "center" },
   dropdownItemIconText: { fontSize: 14, fontWeight: "bold", color: "#fff" },
   dropdownItemText:     { flex: 1, fontSize: 15, color: "#1f2937", fontWeight: "500" },
-  checkMark:            { fontSize: 16, color: "#6366F1", fontWeight: "bold" },
   saveBtn:              { borderRadius: 12, padding: 16, alignItems: "center", marginBottom: 40, elevation: 3 },
   saveBtnText:          { color: "#fff", fontSize: 16, fontWeight: "bold" },
 });
-
