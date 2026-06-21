@@ -3,11 +3,9 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityInd
 import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
-import api from "../services/api";
-
-const BASE_URL = "https://imx-daily-expense-backend-production-f3cf.up.railway.app";
-const CLOUDINARY_CLOUD = "dr7c7wxaw";
-const CLOUDINARY_PRESET = "dv1zh1rc";
+import api, { BASE_URL } from "../services/api";
+const CLOUDINARY_CLOUD = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD || "dr7c7wxaw";
+const CLOUDINARY_PRESET = process.env.EXPO_PUBLIC_CLOUDINARY_PRESET || "dv1zh1rc";
 
 export default function ProfileScreen({ navigation }) {
   const { user, logout, setUser } = useAuth();
@@ -48,7 +46,7 @@ export default function ProfileScreen({ navigation }) {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) { Alert.alert(t("error"), "Please allow access to photos"); return; }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"],
       allowsEditing: true, aspect: [1, 1], quality: 0.7,
     });
     if (!result.canceled) { uploadToCloudinary(result.assets[0]); }
@@ -89,7 +87,7 @@ export default function ProfileScreen({ navigation }) {
   };
 
   const handleUpdate = async () => {
-    if (!name.trim()) { Alert.alert(t("error"), t("name") + " " + t("amountRequired")); return; }
+    if (!name.trim()) { Alert.alert(t("error"), t("amountRequired")); return; }
     setLoading(true);
     try {
       const res = await api.patch("/api/auth/profile/", { name, currency });

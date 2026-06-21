@@ -41,7 +41,7 @@ export default function BudgetPredictionScreen() {
   );
 
   const progressPercent = data ? Math.min((data.current_expense / data.predicted_total) * 100, 100) : 0;
-  const savingsRate = data ? ((data.current_income - data.current_expense) / data.current_income * 100) : 0;
+  const savingsRate = data && data.current_income > 0 ? ((data.current_income - data.current_expense) / data.current_income * 100) : 0;
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>

@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image } from "react-native";
 import { authAPI } from "../services/api";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "../context/AuthContext";
 
 export default function RegisterScreen({ navigation }) {
@@ -20,9 +19,7 @@ export default function RegisterScreen({ navigation }) {
     if (password.length < 6) { Alert.alert("Error", "Password must be at least 6 characters"); return; }
     setLoading(true);
     try {
-      const res = await authAPI.register({ name, email, password, password2, currency: "BDT" });
-      await AsyncStorage.setItem("access_token", res.data.tokens.access);
-      await AsyncStorage.setItem("refresh_token", res.data.tokens.refresh);
+      await authAPI.register({ name, email, password, password2, currency: "BDT" });
       await login(email, password);
     } catch (e) {
       const msg = e.response?.data ? JSON.stringify(e.response.data) : "Registration failed";
@@ -41,8 +38,8 @@ export default function RegisterScreen({ navigation }) {
           <Text style={styles.title}>IMX Daily Expense</Text>
           <Text style={styles.subtitle}>Create new account</Text>
         </View>
-        <TextInput style={styles.input} placeholder="Your Name" placeholderTextColor="#9ca3af" value={name} onChangeText={setName} color="#1f2937" />
-        <TextInput style={styles.input} placeholder="Email" placeholderTextColor="#9ca3af" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" color="#1f2937" />
+        <TextInput style={styles.input} placeholder="Your Name" placeholderTextColor="#9ca3af" value={name} onChangeText={setName} />
+        <TextInput style={styles.input} placeholder="Email" placeholderTextColor="#9ca3af" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
         <View style={styles.passwordBox}>
           <TextInput
             style={styles.passwordInput}
@@ -51,7 +48,6 @@ export default function RegisterScreen({ navigation }) {
             value={password}
             onChangeText={setPassword}
             secureTextEntry={!showPassword}
-            color="#1f2937"
           />
           <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
             <Text style={styles.eyeText}>{showPassword ? "Hide" : "Show"}</Text>
@@ -65,7 +61,6 @@ export default function RegisterScreen({ navigation }) {
             value={password2}
             onChangeText={setPassword2}
             secureTextEntry={!showPassword2}
-            color="#1f2937"
           />
           <TouchableOpacity onPress={() => setShowPassword2(!showPassword2)} style={styles.eyeBtn}>
             <Text style={styles.eyeText}>{showPassword2 ? "Hide" : "Show"}</Text>

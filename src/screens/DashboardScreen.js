@@ -3,11 +3,10 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { PieChart } from "react-native-chart-kit";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
-import { expenseAPI, authAPI } from "../services/api";
+import { expenseAPI, authAPI, BASE_URL } from "../services/api";
 import { scheduleMontlyBudgetAlert } from "../services/notifications";
 
 const screenWidth = Dimensions.get("window").width;
-const BASE_URL = "https://imx-daily-expense-backend-production-f3cf.up.railway.app";
 
 function AnimatedGridBtn({ btn, onPress }) {
   const scale = useRef(new Animated.Value(1)).current;
@@ -206,7 +205,7 @@ export default function DashboardScreen({ navigation }) {
               onPress={() => navigation.navigate("EditExpense", { expense: item })}
               activeOpacity={0.7}>
               <View style={[styles.txIcon, { backgroundColor: item.category_detail?.color || "#6366F1" }]}>
-                <Text style={styles.txIconText}>{item.category_detail?.icon || item.category_detail?.name?.charAt(0)?.toUpperCase() || item.note?.charAt(0)?.toUpperCase() || item.type === "income" ? "+" : "-"}</Text>
+                <Text style={styles.txIconText}>{item.category_detail?.icon || item.category_detail?.name?.charAt(0)?.toUpperCase() || item.note?.charAt(0)?.toUpperCase() || (item.type === "income" ? "+" : "-")}</Text>
               </View>
               <View style={styles.txInfo}>
                 <Text style={styles.txNote} numberOfLines={1}>{item.note || item.category?.name || t("expense")}</Text>

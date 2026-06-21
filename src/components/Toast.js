@@ -9,6 +9,11 @@ export default function Toast({ visible, message, type = "success", onHide }) {
 
   useEffect(() => {
     if (visible) {
+      opacity.setValue(0);
+      scale.setValue(0.3);
+      slideY.setValue(50);
+      checkScale.setValue(0);
+
       Animated.sequence([
         Animated.parallel([
           Animated.spring(opacity, { toValue: 1, useNativeDriver: true, tension: 50 }),
@@ -18,7 +23,7 @@ export default function Toast({ visible, message, type = "success", onHide }) {
         Animated.spring(checkScale, { toValue: 1, useNativeDriver: true, tension: 100, friction: 5 }),
       ]).start();
 
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         Animated.parallel([
           Animated.timing(opacity, { toValue: 0, duration: 400, useNativeDriver: true }),
           Animated.timing(scale, { toValue: 0.3, duration: 400, useNativeDriver: true }),
@@ -28,6 +33,8 @@ export default function Toast({ visible, message, type = "success", onHide }) {
           onHide && onHide();
         });
       }, 2500);
+
+      return () => clearTimeout(timer);
     }
   }, [visible]);
 

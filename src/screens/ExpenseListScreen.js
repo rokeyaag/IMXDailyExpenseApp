@@ -13,16 +13,12 @@ export default function ExpenseListScreen({ navigation }) {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedType, setSelectedType] = useState(null);
 
-  const today = new Date();
-  const month = today.getMonth() + 1;
-  const year = today.getFullYear();
-
   useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     try {
       const [expRes, catRes] = await Promise.all([
-        expenseAPI.list({ month, year }),
+        expenseAPI.list({ page_size: 500 }),
         categoryAPI.list(),
       ]);
       setExpenses(expRes.data.results || expRes.data);

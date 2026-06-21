@@ -61,7 +61,7 @@ export default function AIScreen({ navigation }) {
     try {
       const result = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
       if (!result.granted) {
-        Alert.alert("Permission Required", "Microphone permission lagbe voice use korar jonno.");
+        Alert.alert(t("error"), t("somethingWrong"));
         return false;
       }
       return true;
@@ -89,7 +89,7 @@ export default function AIScreen({ navigation }) {
       });
     } catch (e) {
       stopRingAnimation();
-      showToast("Voice start hoyni: " + e.message, "error");
+      showToast(t("somethingWrong"), "error");
     }
   };
 

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Vibration, Alert } from "react-native";
 import { getPin, isBiometricAvailable, authenticateWithBiometric } from "../services/security";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function PinLockScreen({ onUnlock }) {
+  const { t } = useLanguage();
   const [pin, setPin] = useState("");
   const [biometricAvailable, setBiometricAvailable] = useState(false);
 
@@ -30,7 +32,7 @@ export default function PinLockScreen({ onUnlock }) {
         onUnlock();
       } else {
         Vibration.vibrate(400);
-        Alert.alert("Wrong PIN", "Please try again");
+        Alert.alert(t("wrongPin"), t("tryAgainPin"));
         setPin("");
       }
     }
@@ -50,8 +52,8 @@ export default function PinLockScreen({ onUnlock }) {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.logo}>IMX</Text>
-        <Text style={styles.title}>Enter PIN</Text>
-        <Text style={styles.subtitle}>Enter your 4-digit PIN to continue</Text>
+        <Text style={styles.title}>{t("enterPin")}</Text>
+        <Text style={styles.subtitle}>{t("enterPinSubtitle")}</Text>
       </View>
 
       <View style={styles.dotsRow}>
@@ -73,7 +75,7 @@ export default function PinLockScreen({ onUnlock }) {
                   else if (key) handlePress(key);
                 }}
                 disabled={!key}>
-                <Text style={styles.keyText}>{key === "DEL" ? "?" : key === "BIO" ? "??" : key}</Text>
+                <Text style={styles.keyText}>{key === "DEL" ? "⌫" : key === "BIO" ? "🔓" : key}</Text>
               </TouchableOpacity>
             ))}
           </View>

@@ -64,14 +64,15 @@ export default function App() {
       </View>
     );
   }
-  if (locked) {
-    return <PinLockScreen onUnlock={() => setLocked(false)} />;
-  }
   return (
     <LanguageProvider>
-      <AuthProvider>
-        <AppNavigator />
-      </AuthProvider>
+      {locked ? (
+        <PinLockScreen onUnlock={() => setLocked(false)} />
+      ) : (
+        <AuthProvider>
+          <AppNavigator />
+        </AuthProvider>
+      )}
     </LanguageProvider>
   );
 }

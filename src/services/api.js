@@ -1,7 +1,7 @@
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const BASE_URL = "https://imx-daily-expense-backend-production-f3cf.up.railway.app";
+export const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "https://imx-daily-expense-backend-production-f3cf.up.railway.app";
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -14,6 +14,29 @@ api.interceptors.request.use(async (config) => {
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        const refreshToken = await AsyncStorage.getItem("refresh_token");
+        if (!refreshToken) return Promise.reject(error);
+        const res = await axios.post(`${BASE_URL}/api/auth/token/refresh/`, { refresh: refreshToken });
+        const newAccess = res.data.access;
+        await AsyncStorage.setItem("access_token", newAccess);
+        originalRequest.headers.Authorization = `Bearer ${newAccess}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        await AsyncStorage.multiRemove(["access_token", "refresh_token"]);
+        return Promise.reject(refreshError);
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const authAPI = {
   register: (data) => api.post("/api/auth/register/", data),

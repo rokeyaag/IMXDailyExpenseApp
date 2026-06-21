@@ -230,6 +230,12 @@ const translations = {
     language: "Language",
     english: "English",
     bangla: "Bangla",
+
+    // PIN Lock
+    enterPin: "Enter PIN",
+    enterPinSubtitle: "Enter your 4-digit PIN to continue",
+    wrongPin: "Wrong PIN",
+    tryAgainPin: "Please try again",
   },
 
   bn: {
@@ -458,6 +464,12 @@ const translations = {
     language: "ভাষা",
     english: "English",
     bangla: "বাংলা",
+
+    // PIN Lock
+    enterPin: "পিন দিন",
+    enterPinSubtitle: "চালিয়ে যেতে আপনার ৪-সংখ্যার পিন দিন",
+    wrongPin: "ভুল পিন",
+    tryAgainPin: "আবার চেষ্টা করুন",
   },
 };
 
