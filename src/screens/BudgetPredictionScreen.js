@@ -71,7 +71,7 @@ export default function BudgetPredictionScreen() {
           <Text style={styles.statValue}>Tk {data?.daily_average?.toFixed(0)}</Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: "#F59E0B" }]}>
-          <Text style={styles.statLabel}>Savings %</Text>
+          <Text style={styles.statLabel}>{t("savingsPercent")}</Text>
           <Text style={styles.statValue}>{savingsRate.toFixed(0)}%</Text>
         </View>
       </View>

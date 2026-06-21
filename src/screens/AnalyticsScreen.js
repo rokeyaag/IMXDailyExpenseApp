@@ -36,7 +36,7 @@ export default function AnalyticsScreen() {
       ]);
       setTrend(trendRes.data);
       setCategories(catRes.data);
-    } catch (e) { console.log(e); }
+    } catch {}
     finally { setLoading(false); }
   };
 

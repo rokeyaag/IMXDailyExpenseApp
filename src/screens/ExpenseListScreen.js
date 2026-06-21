@@ -23,7 +23,7 @@ export default function ExpenseListScreen({ navigation }) {
       ]);
       setExpenses(expRes.data.results || expRes.data);
       setCategories(catRes.data.results || catRes.data);
-    } catch (e) { console.log(e); }
+    } catch {}
     finally { setLoading(false); setRefreshing(false); }
   };
 

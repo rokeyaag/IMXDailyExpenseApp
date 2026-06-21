@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, TextInput, Alert } from "react-native";
-import { expenseAPI, categoryAPI } from "../services/api";
+import { categoryAPI } from "../services/api";
 import api from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
 
-export default function BudgetScreen({ navigation }) {
+export default function BudgetScreen() {
   const { t } = useLanguage();
   const [budgets, setBudgets] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -27,7 +27,7 @@ export default function BudgetScreen({ navigation }) {
       ]);
       setBudgets(budgetRes.data.results || budgetRes.data);
       setCategories(catRes.data.results || catRes.data);
-    } catch (e) { console.log(e); }
+    } catch {}
     finally { setLoading(false); }
   };
 

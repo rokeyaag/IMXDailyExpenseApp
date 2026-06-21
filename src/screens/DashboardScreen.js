@@ -3,8 +3,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { PieChart } from "react-native-chart-kit";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
-import { expenseAPI, authAPI, BASE_URL } from "../services/api";
-import { scheduleMontlyBudgetAlert } from "../services/notifications";
+import api, { expenseAPI, authAPI, BASE_URL } from "../services/api";
+import { scheduleMonthlyBudgetAlert } from "../services/notifications";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -80,15 +80,15 @@ export default function DashboardScreen({ navigation }) {
       setRecent(expRes.data.results || expRes.data);
       if (setUser) setUser(profileRes.data);
       try {
-        const budgetRes = await expenseAPI.list({ type: "budget" });
+        const budgetRes = await api.get("/api/budgets/");
         const budgets = budgetRes?.data?.results || budgetRes?.data || [];
         if (budgets.length > 0) {
           const totalBudget = budgets.reduce((sum, b) => sum + parseFloat(b.amount), 0);
           const totalExp = parseFloat(sumRes.data?.total_expense || 0);
-          await scheduleMontlyBudgetAlert(totalExp, totalBudget);
+          await scheduleMonthlyBudgetAlert(totalExp, totalBudget);
         }
       } catch {}
-    } catch (e) { console.log(e); }
+    } catch {}
     finally { setLoading(false); setRefreshing(false); }
   };
 

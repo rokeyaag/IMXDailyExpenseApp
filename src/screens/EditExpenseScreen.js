@@ -46,6 +46,19 @@ export default function EditExpenseScreen({ navigation, route }) {
 
   const formatDate = (d) => d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 
+  const handleDelete = () => {
+    Alert.alert(t("deleteTransaction"), t("deleteThisTxn"), [
+      { text: t("cancel"), style: "cancel" },
+      { text: t("delete"), style: "destructive", onPress: async () => {
+        try {
+          await expenseAPI.delete(expense.id);
+          Alert.alert(t("success"), t("transactionDeleted"));
+          navigation.goBack();
+        } catch { Alert.alert(t("error"), t("somethingWrong")); }
+      }},
+    ]);
+  };
+
   const selectCategory = (cat) => {
     setSelectedCategory(cat.id);
     setSelectedCategoryName(cat.icon + " " + cat.name);
@@ -103,6 +116,10 @@ export default function EditExpenseScreen({ navigation, route }) {
       <TouchableOpacity style={[styles.saveBtn, type === "income" && { backgroundColor: "#10B981" }]} onPress={handleUpdate} disabled={loading}>
         {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>{t("update")}</Text>}
       </TouchableOpacity>
+
+      <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
+        <Text style={styles.deleteBtnText}>{t("delete")}</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -132,6 +149,8 @@ const styles = StyleSheet.create({
   modalIconBox:       { width: 40, height: 40, borderRadius: 20, justifyContent: "center", alignItems: "center", marginRight: 12 },
   modalIcon:          { fontSize: 18 },
   modalItemText:      { flex: 1, fontSize: 15, color: "#1f2937", fontWeight: "500" },
-  saveBtn:            { backgroundColor: "#6366F1", borderRadius: 12, padding: 16, alignItems: "center", marginBottom: 40 },
+  saveBtn:            { backgroundColor: "#6366F1", borderRadius: 12, padding: 16, alignItems: "center", marginBottom: 12 },
   saveBtnText:        { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  deleteBtn:          { backgroundColor: "#fff", borderWidth: 1.5, borderColor: "#EF4444", borderRadius: 12, padding: 16, alignItems: "center", marginBottom: 40 },
+  deleteBtnText:      { color: "#EF4444", fontSize: 16, fontWeight: "bold" },
 });

@@ -36,7 +36,7 @@ export async function sendLocalNotification(title, body) {
   });
 }
 
-export async function scheduleMontlyBudgetAlert(totalExpense, budget) {
+export async function scheduleMonthlyBudgetAlert(totalExpense, budget) {
   const percent = (totalExpense / budget) * 100;
   if (percent >= 80) {
     await sendLocalNotification(

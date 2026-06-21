@@ -32,7 +32,7 @@ export default function ProfileScreen({ navigation }) {
         setPhoto(freshPhoto);
         if (setUser) setUser({ ...user, ...res.data, avatar: freshPhoto });
       }
-    } catch (e) { console.log("Profile fetch error:", e.message); }
+    } catch {}
   };
 
   const getAvatarUri = (av) => {
