@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import api, { expenseAPI, authAPI, BASE_URL } from "../services/api";
 import { scheduleMonthlyBudgetAlert } from "../services/notifications";
+import Toast from "../components/Toast";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -58,6 +59,8 @@ export default function DashboardScreen({ navigation }) {
   const [recent, setRecent] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [toast, setToast] = useState({ visible: false, message: "", type: "success" });
+  const showToast = (message, type = "success") => setToast({ visible: true, message, type });
   const today = new Date();
   const month = today.getMonth() + 1;
   const year = today.getFullYear();
@@ -88,7 +91,9 @@ export default function DashboardScreen({ navigation }) {
           await scheduleMonthlyBudgetAlert(totalExp, totalBudget);
         }
       } catch {}
-    } catch {}
+    } catch {
+      showToast(t("somethingWrong"), "error");
+    }
     finally { setLoading(false); setRefreshing(false); }
   };
 
@@ -128,6 +133,8 @@ export default function DashboardScreen({ navigation }) {
   const getTypeSign = (type) => type === "income" ? "+" : "-";
 
   return (
+    <View style={{ flex: 1 }}>
+    <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={() => setToast({ ...toast, visible: false })} />
     <ScrollView
       style={styles.container}
       showsVerticalScrollIndicator={false}
@@ -221,6 +228,7 @@ export default function DashboardScreen({ navigation }) {
 
       <View style={{ height: 40 }} />
     </ScrollView>
+    </View>
   );
 }
 

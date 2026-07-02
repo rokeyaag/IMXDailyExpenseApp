@@ -19,13 +19,15 @@ export default function AddExpenseScreen({ navigation, route }) {
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: "", type: "success" });
 
-  useEffect(() => {
-    categoryAPI.list().then(res => setCategories(res.data.results || res.data));
-  }, []);
-
   const showToast = (message, type = "success") => {
     setToast({ visible: true, message, type });
   };
+
+  useEffect(() => {
+    categoryAPI.list()
+      .then(res => setCategories(res.data.results || res.data))
+      .catch(() => showToast(t("somethingWrong"), "error"));
+  }, []);
 
   const handleSave = async () => {
     if (!amount) { showToast(t("amountRequired"), "error"); return; }

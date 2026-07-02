@@ -57,7 +57,9 @@ export default function CategoryScreen({ navigation }) {
     try {
       const res = await categoryAPI.list();
       setCategories(res.data.results || res.data);
-    } catch {}
+    } catch {
+      showToast(t("somethingWrong"), "error");
+    }
     finally { setLoading(false); }
   };
 

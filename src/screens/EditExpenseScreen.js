@@ -24,7 +24,7 @@ export default function EditExpenseScreen({ navigation, route }) {
       setCategories(cats);
       const current = cats.find(c => c.id === expense.category);
       if (current) setSelectedCategoryName(current.icon + " " + current.name);
-    });
+    }).catch(() => Alert.alert(t("error"), t("somethingWrong")));
   }, []);
 
   const handleUpdate = async () => {

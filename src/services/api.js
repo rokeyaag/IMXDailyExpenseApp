@@ -9,6 +9,13 @@ const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+// Lets AuthContext know the session was force-ended here (refresh failed), since
+// this interceptor has no access to React context/state on its own.
+let onSessionExpired = null;
+export function setSessionExpiredHandler(fn) {
+  onSessionExpired = fn;
+}
+
 api.interceptors.request.use(async (config) => {
   const token = await AsyncStorage.getItem("access_token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
@@ -23,14 +30,24 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       try {
         const refreshToken = await AsyncStorage.getItem("refresh_token");
-        if (!refreshToken) return Promise.reject(error);
+        if (!refreshToken) {
+          await AsyncStorage.multiRemove(["access_token", "refresh_token"]);
+          onSessionExpired?.();
+          return Promise.reject(error);
+        }
         const res = await axios.post(`${BASE_URL}/api/auth/token/refresh/`, { refresh: refreshToken });
         const newAccess = res.data.access;
         await AsyncStorage.setItem("access_token", newAccess);
         originalRequest.headers.Authorization = `Bearer ${newAccess}`;
         return api(originalRequest);
       } catch (refreshError) {
-        await AsyncStorage.multiRemove(["access_token", "refresh_token"]);
+        // Only force-logout when the server actually rejected the refresh
+        // token. A network failure on the refresh call itself shouldn't
+        // wipe a session that may still be valid.
+        if (refreshError.response) {
+          await AsyncStorage.multiRemove(["access_token", "refresh_token"]);
+          onSessionExpired?.();
+        }
         return Promise.reject(refreshError);
       }
     }

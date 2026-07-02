@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, TextInput, RefreshControl, ScrollView } from "react-native";
 import { expenseAPI, categoryAPI } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
+import Toast from "../components/Toast";
 
 export default function ExpenseListScreen({ navigation }) {
   const { t } = useLanguage();
@@ -12,6 +13,8 @@ export default function ExpenseListScreen({ navigation }) {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedType, setSelectedType] = useState(null);
+  const [toast, setToast] = useState({ visible: false, message: "", type: "success" });
+  const showToast = (message, type = "success") => setToast({ visible: true, message, type });
 
   useEffect(() => { fetchData(); }, []);
 
@@ -23,7 +26,9 @@ export default function ExpenseListScreen({ navigation }) {
       ]);
       setExpenses(expRes.data.results || expRes.data);
       setCategories(catRes.data.results || catRes.data);
-    } catch {}
+    } catch {
+      showToast(t("somethingWrong"), "error");
+    }
     finally { setLoading(false); setRefreshing(false); }
   };
 
@@ -71,6 +76,7 @@ export default function ExpenseListScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
+      <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={() => setToast({ ...toast, visible: false })} />
       <TextInput style={styles.searchInput} placeholder={t("searchTransactions")} placeholderTextColor="#9ca3af" value={search} onChangeText={setSearch} />
       <View style={styles.typeFilter}>
         {[null, "expense", "income"].map((ty) => (

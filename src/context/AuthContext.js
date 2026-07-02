@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { authAPI } from "../services/api";
+import { authAPI, setSessionExpiredHandler } from "../services/api";
 
 const AuthContext = createContext();
 
@@ -8,7 +8,12 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { checkToken(); }, []);
+  useEffect(() => {
+    // api.js calls this when a refresh-token attempt fails, so the UI
+    // reflects the logged-out state instead of showing stale screens.
+    setSessionExpiredHandler(() => setUser(null));
+    checkToken();
+  }, []);
 
   const checkToken = async () => {
     try {
@@ -17,8 +22,13 @@ export const AuthProvider = ({ children }) => {
         const res = await authAPI.profile();
         setUser(res.data);
       }
-    } catch {
-      await AsyncStorage.multiRemove(["access_token", "refresh_token"]);
+    } catch (error) {
+      // Only treat this as a real logout when the server actually rejected
+      // the token. A network error/timeout should not wipe a valid session.
+      if (error.response?.status === 401) {
+        await AsyncStorage.multiRemove(["access_token", "refresh_token"]);
+        setUser(null);
+      }
     } finally {
       setLoading(false);
     }

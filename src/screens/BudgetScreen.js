@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { categoryAPI } from "../services/api";
 import api from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
+import Toast from "../components/Toast";
 
 export default function BudgetScreen() {
   const { t } = useLanguage();
@@ -12,6 +13,8 @@ export default function BudgetScreen() {
   const [showAdd, setShowAdd] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [amount, setAmount] = useState("");
+  const [toast, setToast] = useState({ visible: false, message: "", type: "success" });
+  const showToast = (message, type = "success") => setToast({ visible: true, message, type });
 
   const today = new Date();
   const month = today.getMonth() + 1;
@@ -27,7 +30,9 @@ export default function BudgetScreen() {
       ]);
       setBudgets(budgetRes.data.results || budgetRes.data);
       setCategories(catRes.data.results || catRes.data);
-    } catch {}
+    } catch {
+      showToast(t("somethingWrong"), "error");
+    }
     finally { setLoading(false); }
   };
 
@@ -55,7 +60,9 @@ export default function BudgetScreen() {
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color="#6366F1" />;
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={{ flex: 1 }}>
+      <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={() => setToast({ ...toast, visible: false })} />
+      <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>{t("budget")}</Text>
         <TouchableOpacity style={styles.addBtn} onPress={() => setShowAdd(!showAdd)}>
@@ -104,7 +111,8 @@ export default function BudgetScreen() {
           </View>
         ))
       )}
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 

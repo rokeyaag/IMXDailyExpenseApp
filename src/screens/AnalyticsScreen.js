@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions } fro
 import { BarChart, PieChart } from "react-native-chart-kit";
 import { analyticsAPI, expenseAPI } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
+import Toast from "../components/Toast";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -21,6 +22,8 @@ export default function AnalyticsScreen() {
   const [trend, setTrend] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState({ visible: false, message: "", type: "success" });
+  const showToast = (message, type = "success") => setToast({ visible: true, message, type });
 
   const today = new Date();
   const month = today.getMonth() + 1;
@@ -36,7 +39,9 @@ export default function AnalyticsScreen() {
       ]);
       setTrend(trendRes.data);
       setCategories(catRes.data);
-    } catch {}
+    } catch {
+      showToast(t("somethingWrong"), "error");
+    }
     finally { setLoading(false); }
   };
 
@@ -57,7 +62,9 @@ export default function AnalyticsScreen() {
   }));
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={{ flex: 1 }}>
+      <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={() => setToast({ ...toast, visible: false })} />
+      <ScrollView style={styles.container}>
       <Text style={styles.title}>{t("analytics")}</Text>
 
       <View style={styles.card}>
@@ -85,7 +92,8 @@ export default function AnalyticsScreen() {
         ))}
         {categories.length === 0 && <Text style={styles.empty}>{t("noResults")}</Text>}
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
