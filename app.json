@@ -60,6 +60,9 @@
         "projectId": "fc482a4d-1ed2-479e-bfe7-f847a8754e81"
       }
     },
+    "experiments": {
+      "baseUrl": "/IMXDailyExpenseApp"
+    },
     "owner": "ruku123"
   }
 }
