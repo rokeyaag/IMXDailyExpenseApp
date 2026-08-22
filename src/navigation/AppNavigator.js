@@ -1,10 +1,6 @@
 import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { ActivityIndicator, View } from "react-native";
-import { useAuth } from "../context/AuthContext";
-import LoginScreen from "../screens/LoginScreen";
-import RegisterScreen from "../screens/RegisterScreen";
 import DashboardScreen from "../screens/DashboardScreen";
 import AddExpenseScreen from "../screens/AddExpenseScreen";
 import EditExpenseScreen from "../screens/EditExpenseScreen";
@@ -13,7 +9,6 @@ import AIChatScreen from "../screens/AIChatScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import ReceiptScannerScreen from "../screens/ReceiptScannerScreen";
 import BudgetPredictionScreen from "../screens/BudgetPredictionScreen";
-import PinLockScreen from "../screens/PinLockScreen";
 import BudgetScreen from "../screens/BudgetScreen";
 import AnalyticsScreen from "../screens/AnalyticsScreen";
 import ProfileScreen from "../screens/ProfileScreen";
@@ -28,19 +23,19 @@ export default function AppNavigator() {
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Dashboard">
         <Stack.Screen name="Dashboard" component={DashboardScreen} />
-        <Stack.Screen name="AddExpense" component={AddExpenseScreen} options={{ headerShown: true, title: "New Transaction" }} />
-        <Stack.Screen name="EditExpense" component={EditExpenseScreen} options={{ headerShown: true, title: "Edit Transaction" }} />
-        <Stack.Screen name="AI" component={AIScreen} options={{ headerShown: true, title: "AI Entry" }} />
-        <Stack.Screen name="AIChat" component={AIChatScreen} options={{ headerShown: true, title: "AI Assistant" }} />
-        <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: true, title: "Settings" }} />
-        <Stack.Screen name="ReceiptScanner" component={ReceiptScannerScreen} options={{ headerShown: true, title: "Receipt Scanner" }} />
-        <Stack.Screen name="BudgetPrediction" component={BudgetPredictionScreen} options={{ headerShown: true, title: "Budget Prediction" }} />
-        <Stack.Screen name="Budget" component={BudgetScreen} options={{ headerShown: true, title: "Budget" }} />
-        <Stack.Screen name="Analytics" component={AnalyticsScreen} options={{ headerShown: true, title: "Analytics" }} />
-        <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: true, title: "Profile" }} />
-        <Stack.Screen name="Categories" component={CategoryScreen} options={{ headerShown: true, title: "Categories" }} />
-        <Stack.Screen name="ExpenseList" component={ExpenseListScreen} options={{ headerShown: true, title: "All Transactions" }} />
-        <Stack.Screen name="Report" component={ReportScreen} options={{ headerShown: true, title: "Reports" }} />
+        <Stack.Screen name="AddExpense" component={AddExpenseScreen} />
+        <Stack.Screen name="EditExpense" component={EditExpenseScreen} />
+        <Stack.Screen name="AI" component={AIScreen} />
+        <Stack.Screen name="AIChat" component={AIChatScreen} />
+        <Stack.Screen name="Settings" component={SettingsScreen} />
+        <Stack.Screen name="ReceiptScanner" component={ReceiptScannerScreen} />
+        <Stack.Screen name="BudgetPrediction" component={BudgetPredictionScreen} />
+        <Stack.Screen name="Budget" component={BudgetScreen} />
+        <Stack.Screen name="Analytics" component={AnalyticsScreen} />
+        <Stack.Screen name="Profile" component={ProfileScreen} />
+        <Stack.Screen name="Categories" component={CategoryScreen} />
+        <Stack.Screen name="ExpenseList" component={ExpenseListScreen} />
+        <Stack.Screen name="Report" component={ReportScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

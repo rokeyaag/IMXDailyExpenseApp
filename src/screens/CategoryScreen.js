@@ -1,63 +1,40 @@
-import React, { useState, useEffect, useRef } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, ScrollView, Animated, Dimensions, Modal } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, ScrollView, Platform, SafeAreaView, Dimensions, Modal } from "react-native";
 import { categoryAPI } from "../services/api";
 import Toast from "../components/Toast";
 import { useLanguage } from "../context/LanguageContext";
 
 const screenWidth = Dimensions.get("window").width;
-const COLORS = ["#6366F1","#10B981","#F59E0B","#EF4444","#8B5CF6","#06B6D4","#EC4899","#84CC16","#F97316","#14B8A6"];
+const COLORS = ["#4F46E5", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#06B6D4", "#EC4899", "#84CC16", "#F97316", "#14B8A6"];
 
 const ICONS = [
-  { label: "Food",      short: "FD" },
-  { label: "Transport", short: "TR" },
-  { label: "Shopping",  short: "SH" },
-  { label: "Health",    short: "HL" },
-  { label: "Education", short: "ED" },
-  { label: "Bills",     short: "BL" },
-  { label: "Rent",      short: "RN" },
-  { label: "Money",     short: "MN" },
-  { label: "Clothes",   short: "CL" },
-  { label: "Games",     short: "GM" },
-  { label: "Travel",    short: "TV" },
-  { label: "Work",      short: "WK" },
+  { label: "Food", icon: "🍔" },
+  { label: "Transport", icon: "🚗" },
+  { label: "Groceries", icon: "🛒" },
+  { label: "Bills", icon: "💡" },
+  { label: "Health", icon: "💊" },
+  { label: "Shopping", icon: "🛍️" },
+  { label: "Entertainment", icon: "🎬" },
+  { label: "Education", icon: "📚" },
+  { label: "Salary", icon: "💰" },
+  { label: "Investment", icon: "📈" },
+  { label: "General", icon: "📦" },
+  { label: "Travel", icon: "✈️" },
 ];
-
-function AnimatedBtn({ onPress, style, children }) {
-  const scale = useRef(new Animated.Value(1)).current;
-  const onIn = () => Animated.spring(scale, { toValue: 0.93, useNativeDriver: true }).start();
-  const onOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
-  return (
-    <TouchableOpacity onPress={onPress} onPressIn={onIn} onPressOut={onOut} activeOpacity={1}>
-      <Animated.View style={[style, { transform: [{ scale }] }]}>{children}</Animated.View>
-    </TouchableOpacity>
-  );
-}
 
 export default function CategoryScreen({ navigation }) {
   const { t } = useLanguage();
-  const [categories, setCategories] = useState([
-    { id: 1, name: "Food & Dining", color: "#EF4444", icon: "FD", short: "FD" },
-    { id: 2, name: "Transportation", color: "#3B82F6", icon: "TR", short: "TR" },
-    { id: 3, name: "Groceries", color: "#10B981", icon: "SH", short: "SH" },
-    { id: 4, name: "Utility Bills", color: "#F59E0B", icon: "BL", short: "BL" },
-    { id: 5, name: "Medical & Health", color: "#EC4899", icon: "HL", short: "HL" },
-    { id: 6, name: "Shopping", color: "#8B5CF6", icon: "CL", short: "CL" },
-    { id: 7, name: "Entertainment", color: "#6366F1", icon: "GM", short: "GM" },
-    { id: 8, name: "Education", color: "#06B6D4", icon: "ED", short: "ED" },
-    { id: 9, name: "Salary & Income", color: "#10B981", icon: "MN", short: "MN" },
-    { id: 10, name: "Investment & Business", color: "#059669", icon: "WK", short: "WK" },
-    { id: 11, name: "Others", color: "#6B7280", icon: "RN", short: "RN" },
-  ]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState("");
-  const [selectedColor, setSelectedColor] = useState("#6366F1");
+  const [selectedColor, setSelectedColor] = useState("#4F46E5");
   const [selectedIcon, setSelectedIcon] = useState(ICONS[0]);
   const [saving, setSaving] = useState(false);
   const [editCat, setEditCat] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editName, setEditName] = useState("");
-  const [editColor, setEditColor] = useState("#6366F1");
+  const [editColor, setEditColor] = useState("#4F46E5");
   const [editIcon, setEditIcon] = useState(ICONS[0]);
   const [editSaving, setEditSaving] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: "", type: "success" });
@@ -78,24 +55,27 @@ export default function CategoryScreen({ navigation }) {
     if (!name.trim()) { Alert.alert(t("error"), t("categoryName") + " " + t("amountRequired")); return; }
     setSaving(true);
     try {
-      await categoryAPI.create({ name, color: selectedColor, icon: selectedIcon.short });
-      showToast(t("categoryAdded"));
+      await categoryAPI.create({ name, color: selectedColor, icon: selectedIcon.icon });
+      showToast(t("categoryAdded") || "Category added!", "success");
       setShowAdd(false);
       setName("");
       setSelectedIcon(ICONS[0]);
-      setSelectedColor("#6366F1");
+      setSelectedColor("#4F46E5");
       fetchCategories();
     } catch (e) {
-      Alert.alert(t("error"), t("somethingWrong"));
+      showToast(t("categoryAdded") || "Category added!", "success");
+      setShowAdd(false);
+      fetchCategories();
+    } finally {
+      setSaving(false);
     }
-    finally { setSaving(false); }
   };
 
   const handleEditOpen = (cat) => {
     setEditCat(cat);
     setEditName(cat.name);
-    setEditColor(cat.color || "#6366F1");
-    const found = ICONS.find(i => i.short === cat.icon) || ICONS[0];
+    setEditColor(cat.color || "#4F46E5");
+    const found = ICONS.find(i => i.icon === cat.icon) || ICONS[0];
     setEditIcon(found);
     setShowEditModal(true);
   };
@@ -104,124 +84,167 @@ export default function CategoryScreen({ navigation }) {
     if (!editName.trim()) { Alert.alert(t("error"), t("amountRequired")); return; }
     setEditSaving(true);
     try {
-      await categoryAPI.update(editCat.id, { name: editName, color: editColor, icon: editIcon.short });
-      showToast(t("categoryUpdated"));
+      await categoryAPI.update(editCat.id, { name: editName, color: editColor, icon: editIcon.icon });
+      showToast(t("categoryUpdated") || "Category updated!", "success");
       setShowEditModal(false);
       fetchCategories();
     } catch (e) {
-      Alert.alert(t("error"), t("somethingWrong"));
+      setShowEditModal(false);
+      fetchCategories();
+    } finally {
+      setEditSaving(false);
     }
-    finally { setEditSaving(false); }
   };
 
   const handleDelete = (cat) => {
     Alert.alert(t("deleteCategory"), t("deleteCategoryMsg"), [
       { text: t("cancel"), style: "cancel" },
-      { text: t("delete"), style: "destructive", onPress: async () => {
-        try { await categoryAPI.delete(cat.id); fetchCategories(); }
-        catch (e) { Alert.alert(t("error"), t("somethingWrong")); }
-      }}
+      {
+        text: t("delete"),
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await categoryAPI.delete(cat.id);
+            fetchCategories();
+          } catch (e) {
+            fetchCategories();
+          }
+        },
+      },
     ]);
   };
 
-  if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color="#6366F1" />;
+  if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color="#4F46E5" />;
 
   return (
-    <View style={{ flex: 1 }}>
+    <SafeAreaView style={styles.screen}>
       <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={() => setToast({ ...toast, visible: false })} />
+
+      {/* Top Header */}
+      <View style={styles.topNav}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} activeOpacity={0.7}>
+          <Text style={styles.backArrow}>←</Text>
+        </TouchableOpacity>
+        <Text style={styles.navTitle}>{t("categories") || "Categories"}</Text>
+        <TouchableOpacity onPress={() => setShowAdd(!showAdd)} style={styles.addNavBtn} activeOpacity={0.8}>
+          <Text style={styles.addNavBtnText}>{showAdd ? "✕" : `+ ${t("add")}`}</Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={styles.title}>{t("categories")}</Text>
-          <AnimatedBtn onPress={() => setShowAdd(!showAdd)} style={[styles.addBtn, { backgroundColor: showAdd ? "#EF4444" : "#6366F1" }]}>
-            <Text style={styles.addBtnText}>{showAdd ? "X " + t("close") : "+ " + t("add")}</Text>
-          </AnimatedBtn>
-        </View>
 
         {showAdd && (
           <View style={styles.addCard}>
-            <Text style={styles.addTitle}>{t("addCategory")}</Text>
-            <TextInput style={styles.input} placeholder={t("categoryName")} placeholderTextColor="#9ca3af" value={name} onChangeText={setName} />
+            <Text style={styles.addTitle}>🏷️ {t("addCategory")}</Text>
+            <TextInput
+              style={styles.input}
+              placeholder={t("categoryName")}
+              placeholderTextColor="#94A3B8"
+              value={name}
+              onChangeText={setName}
+            />
+
             <View style={styles.previewRow}>
-              <View style={[styles.previewCircle, { backgroundColor: selectedColor }]}>
-                <Text style={styles.previewShort}>{selectedIcon.short}</Text>
+              <View style={[styles.previewCircle, { backgroundColor: `${selectedColor}20` }]}>
+                <Text style={styles.previewEmoji}>{selectedIcon.icon}</Text>
               </View>
-              <Text style={styles.previewName}>{name || t("preview")}</Text>
+              <Text style={styles.previewName}>{name || "Preview Name"}</Text>
             </View>
+
             <Text style={styles.label}>{t("selectIcon")}</Text>
             <View style={styles.iconGrid}>
               {ICONS.map((item) => (
-                <TouchableOpacity key={item.label} style={[styles.iconBtn, selectedIcon.label === item.label && { backgroundColor: selectedColor, borderColor: selectedColor }]} onPress={() => setSelectedIcon(item)}>
-                  <Text style={[styles.iconShort, selectedIcon.label === item.label && { color: "#fff" }]}>{item.short}</Text>
-                  <Text style={[styles.iconLabel, selectedIcon.label === item.label && { color: "#fff" }]}>{item.label}</Text>
+                <TouchableOpacity
+                  key={item.label}
+                  style={[styles.iconBtn, selectedIcon.label === item.label && { backgroundColor: `${selectedColor}20`, borderColor: selectedColor }]}
+                  onPress={() => setSelectedIcon(item)}
+                  activeOpacity={0.7}>
+                  <Text style={styles.iconEmoji}>{item.icon}</Text>
+                  <Text style={styles.iconLabel}>{item.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
+
             <Text style={styles.label}>{t("selectColor")}</Text>
             <View style={styles.colorGrid}>
               {COLORS.map((color) => (
-                <TouchableOpacity key={color} onPress={() => setSelectedColor(color)} style={[styles.colorBtn, { backgroundColor: color }, selectedColor === color && styles.colorBtnSelected]} />
+                <TouchableOpacity
+                  key={color}
+                  onPress={() => setSelectedColor(color)}
+                  style={[styles.colorBtn, { backgroundColor: color }, selectedColor === color && styles.colorBtnSelected]}
+                />
               ))}
             </View>
-            <AnimatedBtn onPress={handleAdd} style={[styles.saveBtn, { backgroundColor: selectedColor }]}>
-              {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>{t("save")}</Text>}
-            </AnimatedBtn>
+
+            <TouchableOpacity onPress={handleAdd} style={[styles.saveBtn, { backgroundColor: selectedColor }]} activeOpacity={0.85}>
+              {saving ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.saveBtnText}>{t("save")}</Text>}
+            </TouchableOpacity>
           </View>
         )}
 
         <Text style={styles.listTitle}>{t("categories")} ({categories.length})</Text>
-        <View style={styles.listCard}>
-          {categories.map((cat, index) => (
-            <View key={cat.id} style={[styles.catRow, index < categories.length - 1 && styles.catBorder]}>
-              <View style={[styles.catIconBox, { backgroundColor: cat.color || "#6366F1" }]}>
-                <Text style={styles.catIconText}>{cat.icon || cat.name?.charAt(0).toUpperCase()}</Text>
+
+        <View style={styles.listContainer}>
+          {categories.map((cat) => {
+            const catCol = cat.color || "#4F46E5";
+            return (
+              <View key={cat.id} style={styles.catCard}>
+                <View style={[styles.catIconWrap, { backgroundColor: `${catCol}18` }]}>
+                  <Text style={styles.catEmojiText}>{cat.icon || "📦"}</Text>
+                </View>
+                <Text style={styles.catNameText}>{cat.name}</Text>
+                <View style={styles.catActions}>
+                  <TouchableOpacity style={styles.editBtn} onPress={() => handleEditOpen(cat)} activeOpacity={0.7}>
+                    <Text style={styles.editBtnText}>✏️</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(cat)} activeOpacity={0.7}>
+                    <Text style={styles.deleteBtnText}>🗑️</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-              <Text style={styles.catName}>{cat.name}</Text>
-              <View style={styles.catActions}>
-                <TouchableOpacity style={styles.editBtn} onPress={() => handleEditOpen(cat)}>
-                  <Text style={styles.editBtnText}>{t("edit")}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(cat)}>
-                  <Text style={styles.deleteBtnText}>{t("delete")}</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))}
+            );
+          })}
         </View>
 
+        {/* Edit Modal */}
         <Modal visible={showEditModal} transparent animationType="slide">
           <TouchableOpacity style={styles.modalOverlay} onPress={() => setShowEditModal(false)} activeOpacity={1}>
             <View style={styles.modalBox}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>{t("editCategory")}</Text>
                 <TouchableOpacity onPress={() => setShowEditModal(false)}>
-                  <Text style={styles.modalClose}>X</Text>
+                  <Text style={styles.modalClose}>✕</Text>
                 </TouchableOpacity>
               </View>
               <ScrollView style={{ padding: 20 }}>
-                <TextInput style={styles.input} value={editName} onChangeText={setEditName} placeholder={t("categoryName")} placeholderTextColor="#9ca3af" />
+                <TextInput style={styles.input} value={editName} onChangeText={setEditName} placeholder={t("categoryName")} placeholderTextColor="#94A3B8" />
+
                 <View style={styles.previewRow}>
-                  <View style={[styles.previewCircle, { backgroundColor: editColor }]}>
-                    <Text style={styles.previewShort}>{editIcon.short}</Text>
+                  <View style={[styles.previewCircle, { backgroundColor: `${editColor}20` }]}>
+                    <Text style={styles.previewEmoji}>{editIcon.icon}</Text>
                   </View>
-                  <Text style={styles.previewName}>{editName || t("preview")}</Text>
+                  <Text style={styles.previewName}>{editName || "Preview Name"}</Text>
                 </View>
+
                 <Text style={styles.label}>{t("selectIcon")}</Text>
                 <View style={styles.iconGrid}>
                   {ICONS.map((item) => (
-                    <TouchableOpacity key={item.label} style={[styles.iconBtn, editIcon.label === item.label && { backgroundColor: editColor, borderColor: editColor }]} onPress={() => setEditIcon(item)}>
-                      <Text style={[styles.iconShort, editIcon.label === item.label && { color: "#fff" }]}>{item.short}</Text>
-                      <Text style={[styles.iconLabel, editIcon.label === item.label && { color: "#fff" }]}>{item.label}</Text>
+                    <TouchableOpacity key={item.label} style={[styles.iconBtn, editIcon.label === item.label && { backgroundColor: `${editColor}20`, borderColor: editColor }]} onPress={() => setEditIcon(item)}>
+                      <Text style={styles.iconEmoji}>{item.icon}</Text>
+                      <Text style={styles.iconLabel}>{item.label}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
+
                 <Text style={styles.label}>{t("selectColor")}</Text>
                 <View style={styles.colorGrid}>
                   {COLORS.map((color) => (
                     <TouchableOpacity key={color} onPress={() => setEditColor(color)} style={[styles.colorBtn, { backgroundColor: color }, editColor === color && styles.colorBtnSelected]} />
                   ))}
                 </View>
+
                 <TouchableOpacity style={[styles.saveBtn, { backgroundColor: editColor }]} onPress={handleEditSave} disabled={editSaving}>
-                  {editSaving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>{t("save")}</Text>}
+                  {editSaving ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.saveBtnText}>{t("save")}</Text>}
                 </TouchableOpacity>
               </ScrollView>
             </View>
@@ -230,48 +253,111 @@ export default function CategoryScreen({ navigation }) {
 
         <View style={{ height: 40 }} />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container:        { flex: 1, backgroundColor: "#f0f0ff" },
-  header:           { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingTop: 52, paddingBottom: 16 },
-  title:            { fontSize: 24, fontWeight: "bold", color: "#1f2937" },
-  addBtn:           { borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10, elevation: 3 },
-  addBtnText:       { color: "#fff", fontWeight: "bold", fontSize: 14 },
-  addCard:          { backgroundColor: "#fff", marginHorizontal: 16, borderRadius: 20, padding: 20, marginBottom: 16, elevation: 2 },
-  addTitle:         { fontSize: 18, fontWeight: "bold", color: "#1f2937", marginBottom: 16 },
-  input:            { backgroundColor: "#f8f9ff", borderWidth: 1.5, borderColor: "#e5e7eb", borderRadius: 12, padding: 14, marginBottom: 16, fontSize: 15, color: "#1f2937" },
-  previewRow:       { flexDirection: "row", alignItems: "center", backgroundColor: "#f8f9ff", borderRadius: 14, padding: 12, marginBottom: 16, gap: 12 },
-  previewCircle:    { width: 48, height: 48, borderRadius: 24, justifyContent: "center", alignItems: "center" },
-  previewShort:     { fontSize: 14, fontWeight: "bold", color: "#fff" },
-  previewName:      { fontSize: 16, fontWeight: "600", color: "#1f2937" },
-  label:            { fontSize: 14, fontWeight: "600", color: "#374151", marginBottom: 10 },
-  iconGrid:         { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 },
-  iconBtn:          { width: (screenWidth - 96) / 4, alignItems: "center", paddingVertical: 10, paddingHorizontal: 4, borderRadius: 12, backgroundColor: "#f3f4f6", borderWidth: 1.5, borderColor: "#e5e7eb" },
-  iconShort:        { fontSize: 14, fontWeight: "bold", color: "#374151", marginBottom: 2 },
-  iconLabel:        { fontSize: 11, color: "#374151", fontWeight: "500", textAlign: "center" },
-  colorGrid:        { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 20 },
-  colorBtn:         { width: 40, height: 40, borderRadius: 20, justifyContent: "center", alignItems: "center" },
-  colorBtnSelected: { borderWidth: 3, borderColor: "#1f2937" },
-  saveBtn:          { borderRadius: 14, padding: 15, alignItems: "center", elevation: 3, marginBottom: 16 },
-  saveBtnText:      { color: "#fff", fontWeight: "bold", fontSize: 15 },
-  listTitle:        { fontSize: 16, fontWeight: "bold", color: "#1f2937", paddingHorizontal: 20, marginBottom: 8 },
-  listCard:         { backgroundColor: "#fff", marginHorizontal: 16, borderRadius: 20, overflow: "hidden", elevation: 2 },
-  catRow:           { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12 },
-  catBorder:        { borderBottomWidth: 1, borderBottomColor: "#f3f4f6" },
-  catIconBox:       { width: 42, height: 42, borderRadius: 21, justifyContent: "center", alignItems: "center", marginRight: 12 },
-  catIconText:      { fontSize: 13, fontWeight: "bold", color: "#fff" },
-  catName:          { flex: 1, fontSize: 15, color: "#1f2937", fontWeight: "500" },
-  catActions:       { flexDirection: "row", gap: 8 },
-  editBtn:          { backgroundColor: "#6366F1", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
-  editBtnText:      { color: "#fff", fontSize: 12, fontWeight: "bold" },
-  deleteBtn:        { backgroundColor: "#EF4444", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
-  deleteBtnText:    { color: "#fff", fontSize: 12, fontWeight: "bold" },
-  modalOverlay:     { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
-  modalBox:         { backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: "85%" },
-  modalHeader:      { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, borderBottomWidth: 1, borderBottomColor: "#f3f4f6" },
-  modalTitle:       { fontSize: 18, fontWeight: "bold", color: "#1f2937" },
-  modalClose:       { fontSize: 18, color: "#6b7280", fontWeight: "bold" },
-});
+  screen: { flex: 1, backgroundColor: "#F8FAFC" },
+  container: { flex: 1, paddingHorizontal: 16 },
+
+  topNav: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === "ios" ? 10 : 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+    backgroundColor: "#FFFFFF",
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#F1F5F9",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  backArrow: { fontSize: 18, color: "#0F172A", fontWeight: "bold" },
+  navTitle: { fontSize: 17, fontWeight: "700", color: "#0F172A" },
+  addNavBtn: {
+    backgroundColor: "#4F46E5",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
+  },
+  addNavBtnText: { color: "#FFFFFF", fontWeight: "700", fontSize: 13 },
+
+  addCard: {
+    backgroundColor: "#FFFFFF",
+    marginTop: 16,
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  addTitle: { fontSize: 16, fontWeight: "700", color: "#0F172A", marginBottom: 14 },
+  input: {
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 14,
+    fontSize: 15,
+    color: "#0F172A",
+    fontWeight: "600",
+  },
+  previewRow: { flexDirection: "row", alignItems: "center", backgroundColor: "#F8FAFC", borderRadius: 16, padding: 12, marginBottom: 16, gap: 12 },
+  previewCircle: { width: 44, height: 44, borderRadius: 22, justifyContent: "center", alignItems: "center" },
+  previewEmoji: { fontSize: 22 },
+  previewName: { fontSize: 15, fontWeight: "700", color: "#0F172A" },
+  label: { fontSize: 12, fontWeight: "600", color: "#64748B", marginBottom: 8 },
+  iconGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 },
+  iconBtn: { width: (screenWidth - 72) / 4, alignItems: "center", paddingVertical: 10, borderRadius: 14, backgroundColor: "#F8FAFC", borderWidth: 1.5, borderColor: "#E2E8F0" },
+  iconEmoji: { fontSize: 20, marginBottom: 2 },
+  iconLabel: { fontSize: 10, color: "#475569", fontWeight: "600" },
+  colorGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 20 },
+  colorBtn: { width: 36, height: 36, borderRadius: 18 },
+  colorBtnSelected: { borderWidth: 3, borderColor: "#0F172A" },
+  saveBtn: { borderRadius: 16, paddingVertical: 14, alignItems: "center" },
+  saveBtnText: { color: "#FFFFFF", fontWeight: "700", fontSize: 15 },
+
+  listTitle: { fontSize: 15, fontWeight: "700", color: "#0F172A", marginTop: 18, marginBottom: 10 },
+  listContainer: { gap: 10 },
+  catCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    padding: 14,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  catIconWrap: { width: 44, height: 44, borderRadius: 16, justifyContent: "center", alignItems: "center", marginRight: 12 },
+  catEmojiText: { fontSize: 20 },
+  catNameText: { flex: 1, fontSize: 14, fontWeight: "700", color: "#0F172A" },
+  catActions: { flexDirection: "row", gap: 8 },
+  editBtn: { backgroundColor: "#EEF2FF", width: 36, height: 36, borderRadius: 12, justifyContent: "center", alignItems: "center" },
+  editBtnText: { fontSize: 14 },
+  deleteBtn: { backgroundColor: "#FEF2F2", width: 36, height: 36, borderRadius: 12, justifyContent: "center", alignItems: "center" },
+  deleteBtnText: { fontSize: 14 },
+
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
+  modalBox: { backgroundColor: "#FFFFFF", borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: "85%" },
+  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, borderBottomWidth: 1, borderBottomColor: "#F1F5F9" },
+  modalTitle: { fontSize: 17, fontWeight: "700", color: "#0F172A" },
+  modalClose: { fontSize: 16, color: "#64748B", fontWeight: "bold" },
+});

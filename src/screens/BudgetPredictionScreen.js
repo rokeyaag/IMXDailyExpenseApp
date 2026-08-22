@@ -1,19 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Platform, SafeAreaView } from "react-native";
 import api from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
 
-export default function BudgetPredictionScreen() {
+export default function BudgetPredictionScreen({ navigation }) {
   const { t } = useLanguage();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => { fetchPrediction(); }, []);
 
   const fetchPrediction = async () => {
     setLoading(true);
-    setError(null);
     try {
       const res = await api.get("/api/ai/budget-prediction/");
       if (res.data?.prediction) {
@@ -32,7 +30,7 @@ export default function BudgetPredictionScreen() {
             { name: "বিদ্যুৎ ও বিল", total: 3500 },
             { name: "খাবার ও রেস্তোরাঁ", total: 1500 }
           ],
-          ai_advice: "আপনার চলতি মাসের বাজেট সীমার মধ্যেই রয়েছে। সঞ্চয় বৃদ্ধি করতে দৈনিক গড়ে ৳৮০০ এর নিচে খরচ রাখুন।",
+          ai_advice: "আপনার চলতি মাসের খরচ স্বাভাবিক সীমার মধ্যেই রয়েছে। সঞ্চয় বৃদ্ধি করতে প্রতিদিনের খরচ নিয়ন্ত্রণে রাখুন।",
         });
       }
     } catch (e) {
@@ -49,131 +47,215 @@ export default function BudgetPredictionScreen() {
           { name: "বিদ্যুৎ ও বিল", total: 3500 },
           { name: "খাবার ও রেস্তোরাঁ", total: 1500 }
         ],
-        ai_advice: "আপনার চলতি মাসের বাজেট সীমার মধ্যেই রয়েছে। সঞ্চয় বৃদ্ধি করতে দৈনিক গড়ে ৳৮০০ এর নিচে খরচ রাখুন।",
+        ai_advice: "আপনার চলতি মাসের খরচ স্বাভাবিক সীমার মধ্যেই রয়েছে। সঞ্চয় বৃদ্ধি করতে প্রতিদিনের খরচ নিয়ন্ত্রণে রাখুন।",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) return (
-    <View style={styles.center}>
-      <ActivityIndicator size="large" color="#6366F1" />
-      <Text style={styles.loadingText}>{t("loading")}</Text>
-    </View>
-  );
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#4F46E5" />
+      </View>
+    );
+  }
 
-  if (error) return (
-    <View style={styles.center}>
-      <Text style={styles.errorText}>{error}</Text>
-      <TouchableOpacity style={styles.retryBtn} onPress={fetchPrediction}>
-        <Text style={styles.retryBtnText}>{t("retry")}</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
-  const progressPercent = data ? Math.min((data.current_expense / data.predicted_total) * 100, 100) : 0;
-  const savingsRate = data && data.current_income > 0 ? ((data.current_income - data.current_expense) / data.current_income * 100) : 0;
+  const progressPercent = data ? Math.min(Math.round((data.current_expense / data.predicted_total) * 100), 100) : 0;
+  const savingsRate = data && data.current_income > 0 ? Math.round(((data.current_income - data.current_expense) / data.current_income) * 100) : 0;
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-
-      <View style={styles.progressCard}>
-        <Text style={styles.progressTitle}>{t("budgetPrediction")}</Text>
-        <Text style={styles.progressDays}>{data?.days_passed}/{data?.days_in_month} {t("daysPassed")}</Text>
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: ((data?.days_passed / data?.days_in_month) * 100) + "%" }]} />
-        </View>
+    <SafeAreaView style={styles.screen}>
+      {/* Top Header */}
+      <View style={styles.topNav}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} activeOpacity={0.7}>
+          <Text style={styles.backArrow}>←</Text>
+        </TouchableOpacity>
+        <Text style={styles.navTitle}>{t("btnPrediction") || "AI Budget Predictor"}</Text>
+        <TouchableOpacity onPress={fetchPrediction} style={styles.refreshIconBtn} activeOpacity={0.7}>
+          <Text style={styles.refreshIcon}>🔄</Text>
+        </TouchableOpacity>
       </View>
 
-      <View style={styles.statsRow}>
-        <View style={[styles.statCard, { backgroundColor: "#EF4444" }]}>
-          <Text style={styles.statLabel}>{t("currentSpending")}</Text>
-          <Text style={styles.statValue}>Tk {data?.current_expense?.toFixed(0)}</Text>
-        </View>
-        <View style={[styles.statCard, { backgroundColor: "#6366F1" }]}>
-          <Text style={styles.statLabel}>{t("predictedTotal")}</Text>
-          <Text style={styles.statValue}>Tk {data?.predicted_total?.toFixed(0)}</Text>
-        </View>
-      </View>
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
 
-      <View style={styles.statsRow}>
-        <View style={[styles.statCard, { backgroundColor: "#10B981" }]}>
-          <Text style={styles.statLabel}>{t("avgDaily")}</Text>
-          <Text style={styles.statValue}>Tk {data?.daily_average?.toFixed(0)}</Text>
+        {/* Hero Progress Card */}
+        <View style={styles.heroProgressCard}>
+          <View style={styles.heroTopRow}>
+            <Text style={styles.heroProgressLabel}>🗓️ {t("daysPassed")}</Text>
+            <Text style={styles.heroDaysText}>{data?.days_passed} / {data?.days_in_month} Days</Text>
+          </View>
+          <View style={styles.heroProgressBar}>
+            <View style={[styles.heroProgressFill, { width: `${Math.min((data?.days_passed / data?.days_in_month) * 100, 100)}%` }]} />
+          </View>
         </View>
-        <View style={[styles.statCard, { backgroundColor: "#F59E0B" }]}>
-          <Text style={styles.statLabel}>{t("savingsPercent")}</Text>
-          <Text style={styles.statValue}>{savingsRate.toFixed(0)}%</Text>
-        </View>
-      </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>{t("currentSpending")} vs {t("predictedTotal")}</Text>
-        <View style={styles.expenseBar}>
-          <View style={[styles.expenseFill, { width: progressPercent + "%", backgroundColor: progressPercent > 80 ? "#EF4444" : "#6366F1" }]} />
-        </View>
-        <Text style={styles.expensePercent}>{progressPercent.toFixed(0)}%</Text>
-      </View>
+        {/* Stats Grid */}
+        <View style={styles.statsRow}>
+          <View style={[styles.statBox, { backgroundColor: "#FEF2F2", borderColor: "#FEE2E2" }]}>
+            <Text style={styles.statBoxLabel}>💸 {t("currentSpending")}</Text>
+            <Text style={[styles.statBoxValue, { color: "#EF4444" }]}>৳{data?.current_expense?.toLocaleString()}</Text>
+          </View>
 
-      {data?.category_breakdown?.length > 0 && (
+          <View style={[styles.statBox, { backgroundColor: "#EEF2FF", borderColor: "#E0E7FF" }]}>
+            <Text style={styles.statBoxLabel}>🔮 {t("predictedTotal")}</Text>
+            <Text style={[styles.statBoxValue, { color: "#4F46E5" }]}>৳{data?.predicted_total?.toLocaleString()}</Text>
+          </View>
+        </View>
+
+        <View style={styles.statsRow}>
+          <View style={[styles.statBox, { backgroundColor: "#ECFDF5", borderColor: "#D1FAE5" }]}>
+            <Text style={styles.statBoxLabel}>📅 {t("avgDaily")}</Text>
+            <Text style={[styles.statBoxValue, { color: "#10B981" }]}>৳{data?.daily_average?.toFixed(0)} / day</Text>
+          </View>
+
+          <View style={[styles.statBox, { backgroundColor: "#FFFBEB", borderColor: "#FEF3C7" }]}>
+            <Text style={styles.statBoxLabel}>📈 {t("savingsPercent")}</Text>
+            <Text style={[styles.statBoxValue, { color: "#D97706" }]}>{savingsRate}%</Text>
+          </View>
+        </View>
+
+        {/* Spending Progress Gauge */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>{t("topCategories")}</Text>
-          {data.category_breakdown.slice(0, 5).map((cat, i) => (
-            <View key={i} style={styles.catRow}>
-              <Text style={styles.catName}>{cat.name}</Text>
-              <Text style={styles.catAmount}>Tk {cat.total.toFixed(0)}</Text>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>📊 Spending Velocity</Text>
+            <Text style={styles.cardPct}>{progressPercent}% Used</Text>
+          </View>
+          <View style={styles.expenseBar}>
+            <View style={[styles.expenseFill, { width: `${progressPercent}%`, backgroundColor: progressPercent > 80 ? "#EF4444" : "#4F46E5" }]} />
+          </View>
+        </View>
+
+        {/* Top Spending Categories */}
+        {data?.category_breakdown?.length > 0 && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>🏆 {t("topCategories")}</Text>
+            {data.category_breakdown.slice(0, 5).map((cat, i) => (
+              <View key={i} style={[styles.catRow, i < data.category_breakdown.length - 1 && styles.catBorder]}>
+                <Text style={styles.catName}>{cat.name}</Text>
+                <Text style={styles.catAmount}>৳{cat.total?.toLocaleString()}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* AI Financial Advice */}
+        <View style={styles.adviceCard}>
+          <View style={styles.adviceHeader}>
+            <View style={styles.aiBadge}>
+              <Text style={styles.aiBadgeText}>AI INSIGHT</Text>
             </View>
-          ))}
+            <Text style={styles.adviceTitle}>💡 {t("aiAdvice")}</Text>
+          </View>
+          <Text style={styles.adviceText}>{data?.ai_advice}</Text>
         </View>
-      )}
 
-      <View style={styles.adviceCard}>
-        <View style={styles.adviceHeader}>
-          <Text style={styles.adviceIcon}>AI</Text>
-          <Text style={styles.adviceTitle}>{t("aiAdvice")}</Text>
-        </View>
-        <Text style={styles.adviceText}>{data?.ai_advice}</Text>
-      </View>
-
-      <TouchableOpacity style={styles.refreshBtn} onPress={fetchPrediction}>
-        <Text style={styles.refreshBtnText}>{t("refresh")}</Text>
-      </TouchableOpacity>
-
-      <View style={{ height: 40 }} />
-    </ScrollView>
+        <View style={{ height: 40 }} />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container:      { flex: 1, backgroundColor: "#f0f0ff", padding: 16 },
-  center:         { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
-  loadingText:    { marginTop: 16, color: "#6b7280", fontSize: 14 },
-  errorText:      { color: "#EF4444", fontSize: 15, marginBottom: 16 },
-  retryBtn:       { backgroundColor: "#6366F1", borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },
-  retryBtnText:   { color: "#fff", fontWeight: "bold" },
-  progressCard:   { backgroundColor: "#6366F1", borderRadius: 20, padding: 20, marginBottom: 12 },
-  progressTitle:  { color: "rgba(255,255,255,0.8)", fontSize: 13, marginBottom: 4 },
-  progressDays:   { color: "#fff", fontSize: 22, fontWeight: "bold", marginBottom: 12 },
-  progressBar:    { height: 8, backgroundColor: "rgba(255,255,255,0.3)", borderRadius: 4, overflow: "hidden" },
-  progressFill:   { height: "100%", backgroundColor: "#fff", borderRadius: 4 },
-  statsRow:       { flexDirection: "row", gap: 12, marginBottom: 12 },
-  statCard:       { flex: 1, borderRadius: 16, padding: 16, elevation: 2 },
-  statLabel:      { color: "rgba(255,255,255,0.8)", fontSize: 11, marginBottom: 4 },
-  statValue:      { color: "#fff", fontSize: 18, fontWeight: "bold" },
-  card:           { backgroundColor: "#fff", borderRadius: 16, padding: 16, marginBottom: 12, elevation: 2 },
-  cardTitle:      { fontSize: 15, fontWeight: "bold", color: "#1f2937", marginBottom: 12 },
-  expenseBar:     { height: 12, backgroundColor: "#f3f4f6", borderRadius: 6, overflow: "hidden", marginBottom: 8 },
-  expenseFill:    { height: "100%", borderRadius: 6 },
-  expensePercent: { fontSize: 13, color: "#6b7280", textAlign: "right" },
-  catRow:         { flexDirection: "row", justifyContent: "space-between", paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "#f3f4f6" },
-  catName:        { fontSize: 14, color: "#1f2937", fontWeight: "500" },
-  catAmount:      { fontSize: 14, color: "#EF4444", fontWeight: "bold" },
-  adviceCard:     { backgroundColor: "#ede9fe", borderRadius: 16, padding: 16, marginBottom: 12 },
-  adviceHeader:   { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
-  adviceIcon:     { backgroundColor: "#6366F1", color: "#fff", fontSize: 11, fontWeight: "bold", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, overflow: "hidden" },
-  adviceTitle:    { fontSize: 15, fontWeight: "bold", color: "#4338ca" },
-  adviceText:     { fontSize: 14, color: "#374151", lineHeight: 22 },
-  refreshBtn:     { backgroundColor: "#6366F1", borderRadius: 12, padding: 14, alignItems: "center", marginBottom: 12 },
-  refreshBtnText: { color: "#fff", fontWeight: "bold", fontSize: 15 },
-});
+  screen: { flex: 1, backgroundColor: "#F8FAFC" },
+  container: { flex: 1, paddingHorizontal: 16 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#F8FAFC" },
+
+  topNav: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === "ios" ? 10 : 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+    backgroundColor: "#FFFFFF",
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#F1F5F9",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  backArrow: { fontSize: 18, color: "#0F172A", fontWeight: "bold" },
+  navTitle: { fontSize: 17, fontWeight: "700", color: "#0F172A" },
+  refreshIconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#F1F5F9",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  refreshIcon: { fontSize: 16 },
+
+  heroProgressCard: {
+    backgroundColor: "#0F172A",
+    borderRadius: 24,
+    padding: 20,
+    marginTop: 16,
+    marginBottom: 14,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  heroTopRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
+  heroProgressLabel: { color: "#94A3B8", fontSize: 13, fontWeight: "600" },
+  heroDaysText: { color: "#FFFFFF", fontSize: 16, fontWeight: "800" },
+  heroProgressBar: { height: 8, backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 4, overflow: "hidden" },
+  heroProgressFill: { height: "100%", backgroundColor: "#4F46E5", borderRadius: 4 },
+
+  statsRow: { flexDirection: "row", gap: 10, marginBottom: 10 },
+  statBox: {
+    flex: 1,
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1,
+  },
+  statBoxLabel: { fontSize: 11, fontWeight: "600", color: "#64748B", marginBottom: 6 },
+  statBoxValue: { fontSize: 16, fontWeight: "800" },
+
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 22,
+    padding: 18,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
+  cardTitle: { fontSize: 15, fontWeight: "700", color: "#0F172A" },
+  cardPct: { fontSize: 13, fontWeight: "700", color: "#4F46E5" },
+  expenseBar: { height: 10, backgroundColor: "#F1F5F9", borderRadius: 5, overflow: "hidden" },
+  expenseFill: { height: "100%", borderRadius: 5 },
+
+  catRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 10 },
+  catBorder: { borderBottomWidth: 1, borderBottomColor: "#F1F5F9" },
+  catName: { fontSize: 14, color: "#334155", fontWeight: "600" },
+  catAmount: { fontSize: 14, color: "#0F172A", fontWeight: "700" },
+
+  adviceCard: {
+    backgroundColor: "#FAF5FF",
+    borderRadius: 22,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: "#F3E8FF",
+    marginBottom: 16,
+  },
+  adviceHeader: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
+  aiBadge: { backgroundColor: "#7C3AED", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  aiBadgeText: { color: "#FFFFFF", fontSize: 9, fontWeight: "800", letterSpacing: 0.5 },
+  adviceTitle: { fontSize: 14, fontWeight: "700", color: "#581C87" },
+  adviceText: { fontSize: 13, color: "#3B0764", lineHeight: 22, fontWeight: "500" },
+});
