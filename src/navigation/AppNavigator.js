@@ -24,42 +24,23 @@ import ReportScreen from "../screens/ReportScreen";
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#6366F1" />
-      </View>
-    );
-  }
-
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {user ? (
-          <>
-            <Stack.Screen name="Dashboard" component={DashboardScreen} />
-            <Stack.Screen name="AddExpense" component={AddExpenseScreen} options={{ headerShown: true, title: "New Transaction" }} />
-            <Stack.Screen name="EditExpense" component={EditExpenseScreen} options={{ headerShown: true, title: "Edit Transaction" }} />
-            <Stack.Screen name="AI" component={AIScreen} options={{ headerShown: true, title: "AI Entry" }} />
-            <Stack.Screen name="AIChat" component={AIChatScreen} options={{ headerShown: true, title: "AI Assistant" }} />
-            <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: true, title: "Settings" }} />
-            <Stack.Screen name="ReceiptScanner" component={ReceiptScannerScreen} options={{ headerShown: true, title: "Receipt Scanner" }} />
-            <Stack.Screen name="BudgetPrediction" component={BudgetPredictionScreen} options={{ headerShown: true, title: "Budget Prediction" }} />
-            <Stack.Screen name="Budget" component={BudgetScreen} options={{ headerShown: true, title: "Budget" }} />
-            <Stack.Screen name="Analytics" component={AnalyticsScreen} options={{ headerShown: true, title: "Analytics" }} />
-            <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: true, title: "Profile" }} />
-            <Stack.Screen name="Categories" component={CategoryScreen} options={{ headerShown: true, title: "Categories" }} />
-            <Stack.Screen name="ExpenseList" component={ExpenseListScreen} options={{ headerShown: true, title: "All Transactions" }} />
-            <Stack.Screen name="Report" component={ReportScreen} options={{ headerShown: true, title: "Reports" }} />
-          </>
-        ) : (
-          <>
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Register" component={RegisterScreen} />
-          </>
-        )}
+      <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Dashboard">
+        <Stack.Screen name="Dashboard" component={DashboardScreen} />
+        <Stack.Screen name="AddExpense" component={AddExpenseScreen} options={{ headerShown: true, title: "New Transaction" }} />
+        <Stack.Screen name="EditExpense" component={EditExpenseScreen} options={{ headerShown: true, title: "Edit Transaction" }} />
+        <Stack.Screen name="AI" component={AIScreen} options={{ headerShown: true, title: "AI Entry" }} />
+        <Stack.Screen name="AIChat" component={AIChatScreen} options={{ headerShown: true, title: "AI Assistant" }} />
+        <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: true, title: "Settings" }} />
+        <Stack.Screen name="ReceiptScanner" component={ReceiptScannerScreen} options={{ headerShown: true, title: "Receipt Scanner" }} />
+        <Stack.Screen name="BudgetPrediction" component={BudgetPredictionScreen} options={{ headerShown: true, title: "Budget Prediction" }} />
+        <Stack.Screen name="Budget" component={BudgetScreen} options={{ headerShown: true, title: "Budget" }} />
+        <Stack.Screen name="Analytics" component={AnalyticsScreen} options={{ headerShown: true, title: "Analytics" }} />
+        <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: true, title: "Profile" }} />
+        <Stack.Screen name="Categories" component={CategoryScreen} options={{ headerShown: true, title: "Categories" }} />
+        <Stack.Screen name="ExpenseList" component={ExpenseListScreen} options={{ headerShown: true, title: "All Transactions" }} />
+        <Stack.Screen name="Report" component={ReportScreen} options={{ headerShown: true, title: "Reports" }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

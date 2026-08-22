@@ -74,27 +74,40 @@ export default function DashboardScreen({ navigation }) {
 
   const fetchData = async () => {
     try {
-      const [sumRes, expRes, profileRes] = await Promise.all([
+      const [sumRes, expRes, profileRes] = await Promise.allSettled([
         expenseAPI.summary({ month, year }),
         expenseAPI.list({ page_size: 5 }),
         authAPI.profile(),
       ]);
-      setSummary(sumRes.data);
-      setRecent(expRes.data.results || expRes.data);
-      if (setUser) setUser(profileRes.data);
+      if (sumRes.status === "fulfilled" && sumRes.value?.data) {
+        setSummary(sumRes.value.data);
+      } else {
+        setSummary({ total_income: "0", total_expense: "0", balance: "0" });
+      }
+      if (expRes.status === "fulfilled" && expRes.value?.data) {
+        setRecent(expRes.value.data.results || expRes.value.data || []);
+      } else {
+        setRecent([]);
+      }
+      if (profileRes.status === "fulfilled" && profileRes.value?.data && setUser) {
+        setUser(profileRes.value.data);
+      }
       try {
         const budgetRes = await api.get("/api/budgets/");
         const budgets = budgetRes?.data?.results || budgetRes?.data || [];
         if (budgets.length > 0) {
           const totalBudget = budgets.reduce((sum, b) => sum + parseFloat(b.amount), 0);
-          const totalExp = parseFloat(sumRes.data?.total_expense || 0);
+          const totalExp = parseFloat(sumRes.value?.data?.total_expense || 0);
           await scheduleMonthlyBudgetAlert(totalExp, totalBudget);
         }
       } catch {}
-    } catch {
-      showToast(t("somethingWrong"), "error");
+    } catch (e) {
+      setSummary({ total_income: "0", total_expense: "0", balance: "0" });
+      setRecent([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-    finally { setLoading(false); setRefreshing(false); }
   };
 
   const onRefresh = () => { setRefreshing(true); fetchData(); };
@@ -140,12 +153,20 @@ export default function DashboardScreen({ navigation }) {
       showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#6366F1"]} />}>
 
-      <View style={styles.header}>
+      <View style={styles.brandHeader}>
+        <Image source={require("../../assets/icon.png")} style={styles.brandIcon} resizeMode="contain" />
         <View style={{ flex: 1 }}>
-          <Text style={styles.greeting}>{t("hello")}, {user?.name}!</Text>
-          <Text style={styles.subGreeting}>{monthName} {year}</Text>
+          <Text style={styles.brandTitle}>IMX Daily Expense</Text>
+          <Text style={styles.brandSubtitle}>Smart Expense Tracking & AI Assistant</Text>
         </View>
         <LanguageToggle language={language} onToggle={toggleLanguage} />
+      </View>
+
+      <View style={styles.header}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.greeting}>{t("hello")}, {user?.name || "Lutfor Rahman"}!</Text>
+          <Text style={styles.subGreeting}>{monthName} {year}</Text>
+        </View>
         <AvatarSmall user={user} onPress={() => navigation.navigate("Profile")} />
       </View>
 
@@ -234,7 +255,11 @@ export default function DashboardScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container:       { flex: 1, backgroundColor: "#f0f0ff" },
-  header:          { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingTop: 52, paddingBottom: 12 },
+  brandHeader:     { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", paddingHorizontal: 16, paddingTop: 48, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: "#e5e7eb", elevation: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4 },
+  brandIcon:       { width: 38, height: 38, borderRadius: 10, marginRight: 12 },
+  brandTitle:      { fontSize: 16, fontWeight: "bold", color: "#6366F1", letterSpacing: 0.3 },
+  brandSubtitle:   { fontSize: 11, color: "#6b7280", marginTop: 1 },
+  header:          { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 },
   greeting:        { fontSize: 20, fontWeight: "bold", color: "#1f2937" },
   subGreeting:     { fontSize: 13, color: "#6b7280", marginTop: 2 },
   avatarSmall:     { width: 44, height: 44, borderRadius: 22, backgroundColor: "#6366F1", justifyContent: "center", alignItems: "center", elevation: 3 },
