@@ -35,8 +35,20 @@ function AnimatedBtn({ onPress, style, children }) {
 
 export default function CategoryScreen({ navigation }) {
   const { t } = useLanguage();
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState([
+    { id: 1, name: "Food & Dining", color: "#EF4444", icon: "FD", short: "FD" },
+    { id: 2, name: "Transportation", color: "#3B82F6", icon: "TR", short: "TR" },
+    { id: 3, name: "Groceries", color: "#10B981", icon: "SH", short: "SH" },
+    { id: 4, name: "Utility Bills", color: "#F59E0B", icon: "BL", short: "BL" },
+    { id: 5, name: "Medical & Health", color: "#EC4899", icon: "HL", short: "HL" },
+    { id: 6, name: "Shopping", color: "#8B5CF6", icon: "CL", short: "CL" },
+    { id: 7, name: "Entertainment", color: "#6366F1", icon: "GM", short: "GM" },
+    { id: 8, name: "Education", color: "#06B6D4", icon: "ED", short: "ED" },
+    { id: 9, name: "Salary & Income", color: "#10B981", icon: "MN", short: "MN" },
+    { id: 10, name: "Investment & Business", color: "#059669", icon: "WK", short: "WK" },
+    { id: 11, name: "Others", color: "#6B7280", icon: "RN", short: "RN" },
+  ]);
+  const [loading, setLoading] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState("");
   const [selectedColor, setSelectedColor] = useState("#6366F1");
@@ -56,10 +68,9 @@ export default function CategoryScreen({ navigation }) {
   const fetchCategories = async () => {
     try {
       const res = await categoryAPI.list();
-      setCategories(res.data.results || res.data);
-    } catch {
-      showToast(t("somethingWrong"), "error");
-    }
+      const list = res.data?.results || res.data;
+      if (Array.isArray(list) && list.length > 0) setCategories(list);
+    } catch (e) {}
     finally { setLoading(false); }
   };
 

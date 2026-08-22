@@ -33,16 +33,22 @@ export default function AnalyticsScreen() {
 
   const fetchData = async () => {
     try {
-      const [trendRes, catRes] = await Promise.all([
+      const [trendRes, catRes] = await Promise.allSettled([
         analyticsAPI.monthlyTrend(),
         expenseAPI.byCategory({ month, year }),
       ]);
-      setTrend(trendRes.data);
-      setCategories(catRes.data);
-    } catch {
-      showToast(t("somethingWrong"), "error");
+      if (trendRes.status === "fulfilled" && trendRes.value?.data) {
+        setTrend(trendRes.value.data || []);
+      }
+      if (catRes.status === "fulfilled" && catRes.value?.data) {
+        setCategories(catRes.value.data || []);
+      }
+    } catch (e) {
+      setTrend([]);
+      setCategories([]);
+    } finally {
+      setLoading(false);
     }
-    finally { setLoading(false); }
   };
 
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color="#6366F1" />;

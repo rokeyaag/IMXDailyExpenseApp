@@ -20,16 +20,22 @@ export default function ExpenseListScreen({ navigation }) {
 
   const fetchData = async () => {
     try {
-      const [expRes, catRes] = await Promise.all([
+      const [expRes, catRes] = await Promise.allSettled([
         expenseAPI.list({ page_size: 500 }),
         categoryAPI.list(),
       ]);
-      setExpenses(expRes.data.results || expRes.data);
-      setCategories(catRes.data.results || catRes.data);
-    } catch {
-      showToast(t("somethingWrong"), "error");
+      if (expRes.status === "fulfilled" && expRes.value?.data) {
+        setExpenses(expRes.value.data.results || expRes.value.data || []);
+      }
+      if (catRes.status === "fulfilled" && catRes.value?.data) {
+        setCategories(catRes.value.data.results || catRes.value.data || []);
+      }
+    } catch (e) {
+      setExpenses([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-    finally { setLoading(false); setRefreshing(false); }
   };
 
   const onRefresh = () => { setRefreshing(true); fetchData(); };

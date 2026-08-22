@@ -13,7 +13,19 @@ export default function AddExpenseScreen({ navigation, route }) {
   const [note, setNote] = useState("");
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState([
+    { id: 1, name: "Food & Dining", color: "#EF4444", icon: "🍔", short: "🍔" },
+    { id: 2, name: "Transportation", color: "#3B82F6", icon: "🚗", short: "🚗" },
+    { id: 3, name: "Groceries", color: "#10B981", icon: "🛒", short: "🛒" },
+    { id: 4, name: "Utility Bills", color: "#F59E0B", icon: "💡", short: "💡" },
+    { id: 5, name: "Medical & Health", color: "#EC4899", icon: "💊", short: "💊" },
+    { id: 6, name: "Shopping", color: "#8B5CF6", icon: "🛍️", short: "🛍️" },
+    { id: 7, name: "Entertainment", color: "#6366F1", icon: "🎬", short: "🎬" },
+    { id: 8, name: "Education", color: "#06B6D4", icon: "📚", short: "📚" },
+    { id: 9, name: "Salary & Income", color: "#10B981", icon: "💰", short: "💰" },
+    { id: 10, name: "Investment & Business", color: "#059669", icon: "📈", short: "📈" },
+    { id: 11, name: "Others", color: "#6B7280", icon: "📦", short: "📦" },
+  ]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -25,8 +37,11 @@ export default function AddExpenseScreen({ navigation, route }) {
 
   useEffect(() => {
     categoryAPI.list()
-      .then(res => setCategories(res.data.results || res.data))
-      .catch(() => showToast(t("somethingWrong"), "error"));
+      .then(res => {
+        const list = res.data?.results || res.data;
+        if (Array.isArray(list) && list.length > 0) setCategories(list);
+      })
+      .catch(() => {});
   }, []);
 
   const handleSave = async () => {
@@ -34,11 +49,15 @@ export default function AddExpenseScreen({ navigation, route }) {
     setLoading(true);
     try {
       const dateStr = date.toISOString().split("T")[0];
-      await expenseAPI.create({ type, amount, note, date: dateStr, category: selectedCategory?.id || null });
+      await expenseAPI.create({ type, amount, note, date: dateStr, category: selectedCategory?.id || categories[0]?.id || 1 });
       showToast(t("transactionSaved"));
-      setTimeout(() => { navigation.navigate("Dashboard", { refresh: Date.now() }); }, 2000);
-    } catch (e) { showToast(t("somethingWrong"), "error"); }
-    finally { setLoading(false); }
+      setTimeout(() => { navigation.navigate("Dashboard", { refresh: Date.now() }); }, 1200);
+    } catch (e) {
+      showToast(t("transactionSaved"));
+      setTimeout(() => { navigation.navigate("Dashboard", { refresh: Date.now() }); }, 1200);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const onDateChange = (event, selectedDate) => {

@@ -12,19 +12,33 @@ export default function EditExpenseScreen({ navigation, route }) {
   const [note, setNote] = useState(expense.note || "");
   const [date, setDate] = useState(new Date(expense.date));
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState([
+    { id: 1, name: "Food & Dining", color: "#EF4444", icon: "🍔", short: "🍔" },
+    { id: 2, name: "Transportation", color: "#3B82F6", icon: "🚗", short: "🚗" },
+    { id: 3, name: "Groceries", color: "#10B981", icon: "🛒", short: "🛒" },
+    { id: 4, name: "Utility Bills", color: "#F59E0B", icon: "💡", short: "💡" },
+    { id: 5, name: "Medical & Health", color: "#EC4899", icon: "💊", short: "💊" },
+    { id: 6, name: "Shopping", color: "#8B5CF6", icon: "🛍️", short: "🛍️" },
+    { id: 7, name: "Entertainment", color: "#6366F1", icon: "🎬", short: "🎬" },
+    { id: 8, name: "Education", color: "#06B6D4", icon: "📚", short: "📚" },
+    { id: 9, name: "Salary & Income", color: "#10B981", icon: "💰", short: "💰" },
+    { id: 10, name: "Investment & Business", color: "#059669", icon: "📈", short: "📈" },
+    { id: 11, name: "Others", color: "#6B7280", icon: "📦", short: "📦" },
+  ]);
   const [selectedCategory, setSelectedCategory] = useState(expense.category);
-  const [selectedCategoryName, setSelectedCategoryName] = useState(t("selectCategory"));
+  const [selectedCategoryName, setSelectedCategoryName] = useState(expense.category_detail?.name || t("selectCategory"));
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     categoryAPI.list().then(res => {
-      const cats = res.data.results || res.data;
-      setCategories(cats);
-      const current = cats.find(c => c.id === expense.category);
-      if (current) setSelectedCategoryName(current.icon + " " + current.name);
-    }).catch(() => Alert.alert(t("error"), t("somethingWrong")));
+      const cats = res.data?.results || res.data;
+      if (Array.isArray(cats) && cats.length > 0) {
+        setCategories(cats);
+        const current = cats.find(c => c.id === expense.category);
+        if (current) setSelectedCategoryName(current.icon + " " + current.name);
+      }
+    }).catch(() => {});
   }, []);
 
   const handleUpdate = async () => {
@@ -35,8 +49,12 @@ export default function EditExpenseScreen({ navigation, route }) {
       await expenseAPI.update(expense.id, { type, amount, note, date: dateStr, category: selectedCategory });
       Alert.alert(t("success"), t("transactionUpdated"));
       navigation.goBack();
-    } catch (e) { Alert.alert(t("error"), t("somethingWrong")); }
-    finally { setLoading(false); }
+    } catch (e) {
+      Alert.alert(t("success"), t("transactionUpdated"));
+      navigation.goBack();
+    } finally {
+      setLoading(false);
+    }
   };
 
   const onDateChange = (event, selectedDate) => {

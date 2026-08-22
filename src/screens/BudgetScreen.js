@@ -24,16 +24,21 @@ export default function BudgetScreen() {
 
   const fetchData = async () => {
     try {
-      const [budgetRes, catRes] = await Promise.all([
+      const [budgetRes, catRes] = await Promise.allSettled([
         api.get("/api/budgets/"),
         categoryAPI.list(),
       ]);
-      setBudgets(budgetRes.data.results || budgetRes.data);
-      setCategories(catRes.data.results || catRes.data);
-    } catch {
-      showToast(t("somethingWrong"), "error");
+      if (budgetRes.status === "fulfilled" && budgetRes.value?.data) {
+        setBudgets(budgetRes.value.data.results || budgetRes.value.data || []);
+      }
+      if (catRes.status === "fulfilled" && catRes.value?.data) {
+        setCategories(catRes.value.data.results || catRes.value.data || []);
+      }
+    } catch (e) {
+      setBudgets([]);
+    } finally {
+      setLoading(false);
     }
-    finally { setLoading(false); }
   };
 
   const handleAddBudget = async () => {

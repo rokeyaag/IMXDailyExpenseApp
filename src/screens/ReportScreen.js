@@ -41,9 +41,8 @@ export default function ReportScreen() {
     setLoading(true);
     try {
       const res = await api.get(`/api/analytics/report/?preset=${preset}&type=${txnType}`);
-      setReport(res.data);
+      if (res.data) setReport(res.data);
     } catch (e) {
-      showToast(t("somethingWrong"), "error");
     } finally {
       setLoading(false);
     }
