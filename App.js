@@ -11,19 +11,22 @@ import { getPin } from "./src/services/security";
 import AppNavigator from "./src/navigation/AppNavigator";
 import PinLockScreen from "./src/screens/PinLockScreen";
 const applyGlobalFont = () => {
-  const oldTextRender = Text.render;
-  Text.render = function(...args) {
-    const origin = oldTextRender.call(this, ...args);
-    return React.cloneElement(origin, {
-      style: [{ fontFamily: "NotoSansBengali_400Regular" }, origin.props.style],
-    });
-  };
-  const oldTextInputRender = TextInput.render;
+  if (Platform.OS === "web") return;
+  const oldTextRender = Text?.render;
+  if (oldTextRender) {
+    Text.render = function(...args) {
+      const origin = oldTextRender.call(this, ...args);
+      return React.cloneElement(origin, {
+        style: [{ fontFamily: "NotoSansBengali_400Regular" }, origin?.props?.style],
+      });
+    };
+  }
+  const oldTextInputRender = TextInput?.render;
   if (oldTextInputRender) {
     TextInput.render = function(...args) {
       const origin = oldTextInputRender.call(this, ...args);
       return React.cloneElement(origin, {
-        style: [{ fontFamily: "NotoSansBengali_400Regular" }, origin.props.style],
+        style: [{ fontFamily: "NotoSansBengali_400Regular" }, origin?.props?.style],
       });
     };
   }
@@ -42,20 +45,27 @@ export default function App() {
   const [pinChecked, setPinChecked] = useState(false);
   const appState = useRef(AppState.currentState);
   useEffect(() => {
-    registerForPushNotifications();
+    try {
+      registerForPushNotifications();
+    } catch (e) {}
     checkPin();
     const sub = AppState.addEventListener("change", nextState => {
-      if (appState.current.match(/inactive|background/) && nextState === "active") {
+      if (appState.current && appState.current.match(/inactive|background/) && nextState === "active") {
         checkPin();
       }
       appState.current = nextState;
     });
-    return () => sub.remove();
+    return () => sub?.remove?.();
   }, []);
   const checkPin = async () => {
-    const pin = await getPin();
-    if (pin) setLocked(true);
-    setPinChecked(true);
+    try {
+      const pin = await getPin();
+      if (pin) setLocked(true);
+    } catch (e) {
+      console.warn("Failed to check PIN:", e);
+    } finally {
+      setPinChecked(true);
+    }
   };
   if (!fontsLoaded || !pinChecked) {
     return (
