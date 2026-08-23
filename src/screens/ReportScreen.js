@@ -48,30 +48,46 @@ export default function ReportScreen({ navigation }) {
   };
 
   const formatDate = (dateStr) => {
+    if (!dateStr) return "-";
     const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "-";
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
   };
 
   const buildHTML = () => {
     if (!report) return "";
-    const { summary, period, transactions, category_breakdown } = report;
+    const { summary = {}, period = {}, transactions = [], category_breakdown = [] } = report;
 
-    const txnRows = (transactions || []).map((tx, idx) => `
+    const totalInc = parseFloat(summary?.total_income || 0);
+    const totalExp = parseFloat(summary?.total_expense || 0);
+    const netBal = parseFloat(summary?.balance || (totalInc - totalExp));
+
+    const txnRows = (transactions || []).map((tx, idx) => {
+      const amt = parseFloat(tx.amount || 0);
+      const isInc = tx.type === "income";
+      return `
       <tr style="background:${idx % 2 === 0 ? "#f8fafc" : "#ffffff"}">
         <td style="padding:10px;border-bottom:1px solid #e2e8f0;font-size:12px;">${formatDate(tx.date)}</td>
         <td style="padding:10px;border-bottom:1px solid #e2e8f0;font-size:12px;font-weight:600;">${tx.note || "-"}</td>
-        <td style="padding:10px;border-bottom:1px solid #e2e8f0;font-size:12px;">${tx.category}</td>
-        <td style="padding:10px;border-bottom:1px solid #e2e8f0;font-size:12px;font-weight:bold;color:${tx.type === "income" ? "#10B981" : "#EF4444"};text-align:right;">${tx.type === "income" ? "+" : "-"} ৳${tx.amount.toFixed(2)}</td>
+        <td style="padding:10px;border-bottom:1px solid #e2e8f0;font-size:12px;">${tx.category_detail?.name || tx.category || "-"}</td>
+        <td style="padding:10px;border-bottom:1px solid #e2e8f0;font-size:12px;font-weight:bold;color:${isInc ? "#10B981" : "#EF4444"};text-align:right;">${isInc ? "+" : "-"} ৳${amt.toFixed(2)}</td>
       </tr>
-    `).join("");
+      `;
+    }).join("");
 
-    const catRows = (category_breakdown || []).map((c) => `
+    const catRows = (category_breakdown || []).map((c) => {
+      const tot = parseFloat(c.total || 0);
+      return `
       <tr>
         <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:12px;">${c.name}</td>
-        <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:12px;text-align:right;font-weight:bold;">৳${c.total.toFixed(2)}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:12px;text-align:right;font-weight:bold;">৳${tot.toFixed(2)}</td>
       </tr>
-    `).join("");
+      `;
+    }).join("");
+
+    const startDate = period.start_date ? formatDate(period.start_date) : "Start";
+    const endDate = period.end_date ? formatDate(period.end_date) : "Today";
 
     return `
 <!DOCTYPE html>
@@ -98,7 +114,7 @@ export default function ReportScreen({ navigation }) {
   <div class="header">
     <div>
       <h1>${t("reportTitle") || "Financial Statement"}</h1>
-      <p class="subtitle">${t("period") || "Period"}: ${formatDate(period.start_date)} — ${formatDate(period.end_date)}</p>
+      <p class="subtitle">${t("period") || "Period"}: ${startDate} — ${endDate}</p>
     </div>
     <div class="branding">IMX Daily Expense</div>
   </div>
@@ -106,15 +122,15 @@ export default function ReportScreen({ navigation }) {
   <div class="summary-grid">
     <div class="summary-card" style="background:#f0fdf4;border-color:#dcfce7;">
       <div class="summary-label" style="color:#15803d;">${(t("income") || "Income").toUpperCase()}</div>
-      <div class="summary-value" style="color:#15803d;">৳${summary.total_income.toFixed(2)}</div>
+      <div class="summary-value" style="color:#15803d;">৳${totalInc.toFixed(2)}</div>
     </div>
     <div class="summary-card" style="background:#fef2f2;border-color:#fee2e2;">
       <div class="summary-label" style="color:#b91c1c;">${(t("expense") || "Expense").toUpperCase()}</div>
-      <div class="summary-value" style="color:#b91c1c;">৳${summary.total_expense.toFixed(2)}</div>
+      <div class="summary-value" style="color:#b91c1c;">৳${totalExp.toFixed(2)}</div>
     </div>
     <div class="summary-card" style="background:#eef2ff;border-color:#e0e7ff;">
       <div class="summary-label" style="color:#4338ca;">${(t("balance") || "Net Balance").toUpperCase()}</div>
-      <div class="summary-value" style="color:#4338ca;">৳${summary.balance.toFixed(2)}</div>
+      <div class="summary-value" style="color:#4338ca;">৳${netBal.toFixed(2)}</div>
     </div>
   </div>
 

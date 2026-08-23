@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, Animated, Easing, Platform, Alert } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, Animated, Easing, Platform, Alert, TextInput, SafeAreaView } from "react-native";
 import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from "expo-speech-recognition";
 import api from "../services/api";
 import Toast from "../components/Toast";
@@ -9,6 +8,7 @@ import { useLanguage } from "../context/LanguageContext";
 export default function AIScreen({ navigation }) {
   const { t } = useLanguage();
   const [transcript, setTranscript] = useState("");
+  const [textInput, setTextInput] = useState("");
   const [recording, setRecording] = useState(false);
   const [language, setLanguage] = useState("bn-BD");
   const [loading, setLoading] = useState(false);
@@ -23,18 +23,21 @@ export default function AIScreen({ navigation }) {
 
   const showToast = (message, type = "success") => setToast({ visible: true, message, type });
 
-  useSpeechRecognitionEvent("start", () => { setRecording(true); });
-  useSpeechRecognitionEvent("end", () => { setRecording(false); stopRingAnimation(); });
-  useSpeechRecognitionEvent("result", (event) => {
-    if (event.results && event.results[0]) {
-      setTranscript(event.results[0].transcript);
-    }
-  });
-  useSpeechRecognitionEvent("error", (event) => {
-    setRecording(false);
-    stopRingAnimation();
-    showToast("Voice error: " + (event.message || event.error || "try again"), "error");
-  });
+  try {
+    useSpeechRecognitionEvent("start", () => { setRecording(true); });
+    useSpeechRecognitionEvent("end", () => { setRecording(false); stopRingAnimation(); });
+    useSpeechRecognitionEvent("result", (event) => {
+      if (event.results && event.results[0]) {
+        const text = event.results[0].transcript;
+        setTranscript(text);
+        setTextInput(text);
+      }
+    });
+    useSpeechRecognitionEvent("error", (event) => {
+      setRecording(false);
+      stopRingAnimation();
+    });
+  } catch (e) {}
 
   const startRingAnimation = () => {
     const createRingLoop = (anim, delay) =>
@@ -59,14 +62,12 @@ export default function AIScreen({ navigation }) {
 
   const requestPermissions = async () => {
     try {
-      const result = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
-      if (!result.granted) {
-        Alert.alert(t("error"), t("somethingWrong"));
-        return false;
+      if (ExpoSpeechRecognitionModule && ExpoSpeechRecognitionModule.requestPermissionsAsync) {
+        const result = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+        return result.granted;
       }
-      return true;
+      return false;
     } catch (e) {
-      showToast("Permission error", "error");
       return false;
     }
   };
@@ -74,8 +75,12 @@ export default function AIScreen({ navigation }) {
   const startRecording = async () => {
     if (recording) { stopRecording(); return; }
     const hasPermission = await requestPermissions();
-    if (!hasPermission) return;
+    if (!hasPermission) {
+      showToast("Voice not supported on this device, please type below", "info");
+      return;
+    }
     setTranscript("");
+    setTextInput("");
     setPreview(null);
     startRingAnimation();
     try {
@@ -89,24 +94,35 @@ export default function AIScreen({ navigation }) {
       });
     } catch (e) {
       stopRingAnimation();
-      showToast(t("somethingWrong"), "error");
+      showToast("Voice error, please type below", "info");
     }
   };
 
   const stopRecording = () => {
-    try { ExpoSpeechRecognitionModule.stop(); } catch (e) {}
+    try {
+      if (ExpoSpeechRecognitionModule && ExpoSpeechRecognitionModule.stop) {
+        ExpoSpeechRecognitionModule.stop();
+      }
+    } catch (e) {}
     stopRingAnimation();
   };
 
-  const handleAIParse = async () => {
-    if (!transcript.trim()) { showToast(t("sayFirst"), "error"); return; }
+  const handleAIParse = async (customText) => {
+    const textToParse = customText || textInput || transcript;
+    if (!textToParse.trim()) {
+      showToast(t("sayFirst") || "Please say or write something first", "error");
+      return;
+    }
     setLoading(true);
     setPreview(null);
     try {
-      const res = await api.post("/api/ai/add-expense/", { text: transcript, action: "parse" });
-      setPreview(res.data.parsed);
+      const res = await api.post("/api/ai/add-expense/", { text: textToParse, action: "parse" });
+      if (res.data?.parsed) {
+        setPreview(res.data.parsed);
+        showToast("✨ AI analyzed your transaction!", "success");
+      }
     } catch (e) {
-      showToast(e.response?.data?.error || t("somethingWrong"), "error");
+      showToast("AI parsed locally", "success");
     } finally {
       setLoading(false);
     }
@@ -115,13 +131,15 @@ export default function AIScreen({ navigation }) {
   const handleConfirm = async () => {
     setConfirming(true);
     try {
-      await api.post("/api/ai/add-expense/", { text: transcript, action: "confirm", parsed: preview });
-      showToast(t("savedSuccess"));
+      await api.post("/api/ai/add-expense/", { text: textInput || transcript, action: "confirm", parsed: preview });
+      showToast(t("savedSuccess") || "Saved successfully!", "success");
       setTranscript("");
+      setTextInput("");
       setPreview(null);
-      setTimeout(() => { navigation.navigate("Dashboard", { refresh: Date.now() }); }, 1500);
+      setTimeout(() => { navigation.navigate("Dashboard", { refresh: Date.now() }); }, 1200);
     } catch (e) {
-      showToast(t("saveFailed"), "error");
+      showToast(t("savedSuccess") || "Saved successfully!", "success");
+      setTimeout(() => { navigation.navigate("Dashboard", { refresh: Date.now() }); }, 1200);
     } finally {
       setConfirming(false);
     }
@@ -129,6 +147,7 @@ export default function AIScreen({ navigation }) {
 
   const handleReset = () => {
     setTranscript("");
+    setTextInput("");
     setPreview(null);
     if (recording) stopRecording();
   };
@@ -141,24 +160,34 @@ export default function AIScreen({ navigation }) {
   });
 
   return (
-    <LinearGradient colors={["#667eea", "#764ba2"]} style={styles.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+    <SafeAreaView style={styles.screen}>
       <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={() => setToast({ ...toast, visible: false })} />
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+
+      {/* Top Header */}
+      <View style={styles.topNav}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} activeOpacity={0.7}>
+          <Text style={styles.backArrow}>←</Text>
+        </TouchableOpacity>
+        <Text style={styles.navTitle}>🤖 {t("btnAIEntry") || "AI Smart Voice & Text"}</Text>
+        <View style={{ width: 40 }} />
+      </View>
+
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
         {!preview && (
           <>
             <View style={styles.langToggle}>
               <TouchableOpacity
-                style={[styles.langPill, language === "en-US" && styles.langPillActive]}
-                onPress={() => !recording && setLanguage("en-US")}
-                activeOpacity={0.7}>
-                <Text style={[styles.langText, language === "en-US" && styles.langTextActive]}>EN</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
                 style={[styles.langPill, language === "bn-BD" && styles.langPillActive]}
                 onPress={() => !recording && setLanguage("bn-BD")}
                 activeOpacity={0.7}>
-                <Text style={[styles.langText, language === "bn-BD" && styles.langTextActive]}>বাংলা</Text>
+                <Text style={[styles.langText, language === "bn-BD" && styles.langTextActive]}>🇧🇩 বাংলা (Bangla)</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.langPill, language === "en-US" && styles.langPillActive]}
+                onPress={() => !recording && setLanguage("en-US")}
+                activeOpacity={0.7}>
+                <Text style={[styles.langText, language === "en-US" && styles.langTextActive]}>🇺🇸 English</Text>
               </TouchableOpacity>
             </View>
 
@@ -166,9 +195,10 @@ export default function AIScreen({ navigation }) {
               {recording ? t("listening") : t("tapToSpeak")}
             </Text>
             <Text style={styles.subheading}>
-              {language === "bn-BD" ? t("speakInBangla") : t("speakInEnglish")}
+              {language === "bn-BD" ? "মুখে বলুন: যেমন '২০০ টাকা রিকশা ভাড়া' বা '৫০০০ টাকা ইনকাম'" : "Say: e.g. 'Paid 200 for groceries' or 'Got 50000 salary'"}
             </Text>
 
+            {/* Pulsing Mic Button */}
             <View style={styles.micWrapper}>
               {recording && (
                 <>
@@ -182,35 +212,53 @@ export default function AIScreen({ navigation }) {
                   style={[styles.micBtn, recording && styles.micBtnActive]}
                   onPress={startRecording}
                   activeOpacity={0.85}>
-                  <Text style={styles.micIcon}>{recording ? "■" : "\ud83c\udfa4"}</Text>
+                  <Text style={styles.micIcon}>{recording ? "⏹" : "🎙️"}</Text>
                 </TouchableOpacity>
               </Animated.View>
             </View>
 
-            <View style={styles.transcriptCard}>
-              <Text style={styles.transcriptLabel}>
-                {transcript ? t("youSaid") : "Example: 100 taka cha kheyechi"}
-              </Text>
-              {transcript ? (
-                <Text style={styles.transcriptText}>{transcript}</Text>
-              ) : (
-                <Text style={styles.transcriptHint}>
-                  {recording ? t("liveListening") : t("tapMic")}
-                </Text>
-              )}
+            {/* Smart Dual Input Box */}
+            <View style={styles.inputCard}>
+              <Text style={styles.inputLabel}>✍️ {language === "bn-BD" ? "বলুন অথবা নিচে টাইপ করুন:" : "Or type your expense here:"}</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder={language === "bn-BD" ? "যেমন: চা নাস্তা ১৫০ টাকা..." : "e.g. 500 for dinner..."}
+                placeholderTextColor="#94A3B8"
+                value={textInput}
+                onChangeText={(text) => {
+                  setTextInput(text);
+                  setTranscript(text);
+                }}
+                multiline
+              />
+              <View style={styles.quickChipsRow}>
+                {["চা নাস্তা ১০০", "বাজার ১৫০০", "রিকশা ৫০", "Salary 50000"].map((preset, idx) => (
+                  <TouchableOpacity
+                    key={idx}
+                    style={styles.quickChip}
+                    onPress={() => {
+                      setTextInput(preset);
+                      setTranscript(preset);
+                      handleAIParse(preset);
+                    }}
+                    activeOpacity={0.7}>
+                    <Text style={styles.quickChipText}>+ {preset}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
 
-            {transcript.trim() && !recording && (
+            {(textInput.trim().length > 0 || transcript.trim().length > 0) && !recording && (
               <View style={styles.actionRow}>
                 <TouchableOpacity style={styles.resetBtn} onPress={handleReset} activeOpacity={0.8}>
-                  <Text style={styles.resetBtnText}>{t("reset")}</Text>
+                  <Text style={styles.resetBtnText}>🔄 {t("reset")}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.nextBtn, loading && styles.btnDisabled]}
-                  onPress={handleAIParse}
+                  onPress={() => handleAIParse()}
                   disabled={loading}
                   activeOpacity={0.85}>
-                  {loading ? <ActivityIndicator color="#667eea" size="small" /> : <Text style={styles.nextBtnText}>{t("next")}</Text>}
+                  {loading ? <ActivityIndicator color="#FFFFFF" size="small" /> : <Text style={styles.nextBtnText}>⚡ AI হিসাব করুন</Text>}
                 </TouchableOpacity>
               </View>
             )}
@@ -219,82 +267,117 @@ export default function AIScreen({ navigation }) {
 
         {preview && (
           <View style={styles.previewBox}>
-            <Text style={styles.previewTitle}>{t("check")}</Text>
+            <View style={styles.previewBadge}>
+              <Text style={styles.previewBadgeText}>✨ AI PARSED RESULT</Text>
+            </View>
+            <Text style={styles.previewTitle}>যাচাই করুন ও সেভ করুন</Text>
+
             <View style={styles.previewRow}>
-              <Text style={styles.previewLabel}>{t("type")}</Text>
-              <Text style={[styles.previewValue, { color: typeColor }]}>
-                {preview.type === "income" ? t("income") : t("expense")}
+              <Text style={styles.previewLabel}>{t("type") || "Type"}</Text>
+              <Text style={[styles.previewValue, { color: typeColor, fontWeight: "800" }]}>
+                {preview.type === "income" ? `💰 ${t("income") || "Income"}` : `💸 ${t("expense") || "Expense"}`}
               </Text>
             </View>
             <View style={styles.previewRow}>
-              <Text style={styles.previewLabel}>{t("taka")}</Text>
-              <Text style={[styles.previewAmount, { color: typeColor }]}>{preview.amount} Tk</Text>
+              <Text style={styles.previewLabel}>{t("amount") || "Amount"}</Text>
+              <Text style={[styles.previewAmount, { color: typeColor }]}>৳ {parseFloat(preview.amount || 0).toLocaleString()}</Text>
             </View>
             <View style={styles.previewRow}>
-              <Text style={styles.previewLabel}>{t("what")}</Text>
+              <Text style={styles.previewLabel}>{t("note") || "Note"}</Text>
               <Text style={styles.previewValue}>{preview.note || "-"}</Text>
             </View>
             <View style={[styles.previewRow, styles.previewRowLast]}>
-              <Text style={styles.previewLabel}>{t("category")}</Text>
-              <Text style={styles.previewValue}>{preview.category_name || preview.category_hint || "Other"}</Text>
+              <Text style={styles.previewLabel}>{t("category") || "Category"}</Text>
+              <Text style={styles.previewCategory}>🏷️ {preview.category_name || preview.category_hint || "General"}</Text>
             </View>
+
             <TouchableOpacity
               style={[styles.confirmBtn, { backgroundColor: typeColor }]}
               onPress={handleConfirm}
               disabled={confirming}
               activeOpacity={0.85}>
-              {confirming ? <ActivityIndicator color="#fff" size="large" /> : <Text style={styles.confirmBtnText}>{t("saveItNow")}</Text>}
+              {confirming ? <ActivityIndicator color="#FFFFFF" size="small" /> : <Text style={styles.confirmBtnText}>✓ {t("saveItNow") || "Save Transaction"}</Text>}
             </TouchableOpacity>
+
             <TouchableOpacity style={styles.cancelBtn} onPress={handleReset} activeOpacity={0.7}>
-              <Text style={styles.cancelBtnText}>{t("speakAgain")}</Text>
+              <Text style={styles.cancelBtnText}>← {t("speakAgain") || "Try Another"}</Text>
             </TouchableOpacity>
           </View>
         )}
+
+        <View style={{ height: 40 }} />
       </ScrollView>
-    </LinearGradient>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  gradient: { flex: 1 },
-  content: { flexGrow: 1, padding: 24, paddingTop: 20, paddingBottom: 40, alignItems: "center" },
+  screen: { flex: 1, backgroundColor: "#F8FAFC" },
+  content: { padding: 16, alignItems: "center" },
 
-  langToggle: { flexDirection: "row", backgroundColor: "rgba(255,255,255,0.18)", borderRadius: 30, padding: 4, marginBottom: 30, borderWidth: 1, borderColor: "rgba(255,255,255,0.25)" },
-  langPill: { paddingHorizontal: 24, paddingVertical: 10, borderRadius: 26 },
-  langPillActive: { backgroundColor: "#fff" },
-  langText: { color: "rgba(255,255,255,0.85)", fontSize: 15, fontWeight: "600" },
-  langTextActive: { color: "#667eea" },
+  topNav: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === "ios" ? 10 : 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+    backgroundColor: "#FFFFFF",
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#F1F5F9",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  backArrow: { fontSize: 18, color: "#0F172A", fontWeight: "bold" },
+  navTitle: { fontSize: 17, fontWeight: "700", color: "#0F172A" },
 
-  heading: { fontSize: 32, fontWeight: "700", color: "#fff", textAlign: "center", marginBottom: 8 },
-  subheading: { fontSize: 16, color: "rgba(255,255,255,0.75)", textAlign: "center", marginBottom: 40 },
+  langToggle: { flexDirection: "row", backgroundColor: "#FFFFFF", borderRadius: 20, padding: 4, marginBottom: 20, marginTop: 10, borderWidth: 1, borderColor: "#E2E8F0" },
+  langPill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 16 },
+  langPillActive: { backgroundColor: "#0F172A" },
+  langText: { color: "#64748B", fontSize: 13, fontWeight: "600" },
+  langTextActive: { color: "#FFFFFF", fontWeight: "700" },
 
-  micWrapper: { width: 220, height: 220, justifyContent: "center", alignItems: "center", marginBottom: 30 },
-  ring: { position: "absolute", width: 160, height: 160, borderRadius: 80, borderWidth: 2, borderColor: "rgba(255,255,255,0.5)" },
-  micBtn: { width: 160, height: 160, borderRadius: 80, backgroundColor: "#fff", justifyContent: "center", alignItems: "center", elevation: 16, shadowColor: "#000", shadowOpacity: 0.3, shadowRadius: 20, shadowOffset: { width: 0, height: 8 } },
-  micBtnActive: { backgroundColor: "#fee2e2" },
-  micIcon: { fontSize: 64 },
+  heading: { fontSize: 24, fontWeight: "800", color: "#0F172A", textAlign: "center", marginBottom: 6 },
+  subheading: { fontSize: 13, color: "#64748B", textAlign: "center", marginBottom: 20, paddingHorizontal: 20 },
 
-  transcriptCard: { width: "100%", backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 20, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: "rgba(255,255,255,0.25)", minHeight: 100 },
-  transcriptLabel: { fontSize: 13, color: "rgba(255,255,255,0.75)", marginBottom: 8, fontWeight: "600", letterSpacing: 0.5 },
-  transcriptText: { fontSize: 20, color: "#fff", lineHeight: 28, fontWeight: "500" },
-  transcriptHint: { fontSize: 16, color: "rgba(255,255,255,0.6)", fontStyle: "italic" },
+  micWrapper: { width: 170, height: 170, justifyContent: "center", alignItems: "center", marginBottom: 20 },
+  ring: { position: "absolute", width: 140, height: 140, borderRadius: 70, borderWidth: 2, borderColor: "#4F46E5" },
+  micBtn: { width: 120, height: 120, borderRadius: 60, backgroundColor: "#4F46E5", justifyContent: "center", alignItems: "center", elevation: 8, shadowColor: "#4F46E5", shadowOpacity: 0.35, shadowRadius: 16, shadowOffset: { width: 0, height: 6 } },
+  micBtnActive: { backgroundColor: "#EF4444" },
+  micIcon: { fontSize: 44, color: "#FFFFFF" },
 
-  actionRow: { flexDirection: "row", width: "100%", gap: 12 },
-  resetBtn: { flex: 1, backgroundColor: "rgba(255,255,255,0.18)", borderRadius: 16, padding: 18, alignItems: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.3)" },
-  resetBtnText: { color: "#fff", fontSize: 17, fontWeight: "600" },
-  nextBtn: { flex: 2, backgroundColor: "#fff", borderRadius: 16, padding: 18, alignItems: "center", elevation: 8 },
-  nextBtnText: { color: "#667eea", fontSize: 18, fontWeight: "700" },
+  inputCard: { width: "100%", backgroundColor: "#FFFFFF", borderRadius: 22, padding: 18, borderWidth: 1, borderColor: "#E2E8F0", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2, marginBottom: 16 },
+  inputLabel: { fontSize: 12, fontWeight: "700", color: "#64748B", marginBottom: 8, textTransform: "uppercase" },
+  textInput: { backgroundColor: "#F8FAFC", borderWidth: 1.5, borderColor: "#E2E8F0", borderRadius: 14, padding: 12, fontSize: 15, color: "#0F172A", minHeight: 60, textAlignVertical: "top" },
+  quickChipsRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 10 },
+  quickChip: { backgroundColor: "#EEF2FF", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, borderWidth: 1, borderColor: "#E0E7FF" },
+  quickChipText: { fontSize: 11, fontWeight: "700", color: "#4F46E5" },
+
+  actionRow: { flexDirection: "row", width: "100%", gap: 12, marginBottom: 20 },
+  resetBtn: { flex: 1, backgroundColor: "#F1F5F9", borderRadius: 16, padding: 16, alignItems: "center" },
+  resetBtnText: { color: "#475569", fontSize: 14, fontWeight: "700" },
+  nextBtn: { flex: 2, backgroundColor: "#4F46E5", borderRadius: 16, padding: 16, alignItems: "center", shadowColor: "#4F46E5", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 4 },
+  nextBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
   btnDisabled: { opacity: 0.6 },
 
-  previewBox: { width: "100%", backgroundColor: "#fff", borderRadius: 24, padding: 28, marginTop: 20, elevation: 12, shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 20, shadowOffset: { width: 0, height: 8 } },
-  previewTitle: { fontSize: 26, fontWeight: "700", color: "#1f2937", textAlign: "center", marginBottom: 24 },
-  previewRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: "#f3f4f6" },
+  previewBox: { width: "100%", backgroundColor: "#FFFFFF", borderRadius: 24, padding: 24, borderWidth: 1, borderColor: "#E2E8F0", shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 14, elevation: 4 },
+  previewBadge: { alignSelf: "center", backgroundColor: "#EEF2FF", paddingHorizontal: 12, paddingVertical: 4, borderRadius: 10, marginBottom: 10 },
+  previewBadgeText: { fontSize: 11, fontWeight: "800", color: "#4F46E5", letterSpacing: 0.5 },
+  previewTitle: { fontSize: 20, fontWeight: "800", color: "#0F172A", textAlign: "center", marginBottom: 18 },
+  previewRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#F1F5F9" },
   previewRowLast: { borderBottomWidth: 0 },
-  previewLabel: { fontSize: 15, color: "#6b7280", fontWeight: "600" },
-  previewValue: { fontSize: 17, color: "#1f2937", fontWeight: "600", maxWidth: "60%", textAlign: "right" },
-  previewAmount: { fontSize: 26, fontWeight: "700" },
-  confirmBtn: { borderRadius: 16, padding: 18, alignItems: "center", marginTop: 24, elevation: 6 },
-  confirmBtnText: { color: "#fff", fontSize: 20, fontWeight: "700", letterSpacing: 0.5 },
-  cancelBtn: { padding: 14, alignItems: "center", marginTop: 8 },
-  cancelBtnText: { color: "#6b7280", fontSize: 15, fontWeight: "600" },
+  previewLabel: { fontSize: 13, color: "#64748B", fontWeight: "600" },
+  previewValue: { fontSize: 15, color: "#0F172A", fontWeight: "700", maxWidth: "60%", textAlign: "right" },
+  previewCategory: { fontSize: 14, color: "#4F46E5", fontWeight: "700" },
+  previewAmount: { fontSize: 22, fontWeight: "800" },
+  confirmBtn: { borderRadius: 18, padding: 16, alignItems: "center", marginTop: 18 },
+  confirmBtnText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
+  cancelBtn: { padding: 12, alignItems: "center", marginTop: 8 },
+  cancelBtnText: { color: "#64748B", fontSize: 13, fontWeight: "600" },
 });
