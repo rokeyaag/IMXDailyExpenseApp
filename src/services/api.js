@@ -108,6 +108,28 @@ async function saveLocalBudgets(buds) {
   } catch (e) {}
 }
 
+export async function getLocalProfile() {
+  try {
+    const raw = await AsyncStorage.getItem("imx_user_profile");
+    if (raw) return JSON.parse(raw);
+    await AsyncStorage.setItem("imx_user_profile", JSON.stringify(DEFAULT_USER));
+    return DEFAULT_USER;
+  } catch (e) {
+    return DEFAULT_USER;
+  }
+}
+
+export async function saveLocalProfile(data) {
+  try {
+    const cur = await getLocalProfile();
+    const merged = { ...cur, ...data };
+    await AsyncStorage.setItem("imx_user_profile", JSON.stringify(merged));
+    return merged;
+  } catch (e) {
+    return data;
+  }
+}
+
 // --- Local Computation Helpers ---
 function computeSummary(expenses, month, year) {
   let totalIncome = 0;
@@ -279,10 +301,13 @@ export const authAPI = {
   profile: async () => {
     try {
       const res = await rawAxios.get("/api/auth/profile/");
-      return res;
-    } catch (e) {
-      return { data: DEFAULT_USER };
-    }
+      if (res.data) {
+        await saveLocalProfile(res.data);
+        return res;
+      }
+    } catch (e) {}
+    const local = await getLocalProfile();
+    return { data: local };
   },
 };
 
@@ -441,7 +466,8 @@ const api = {
       return { data: { results: budgets, count: budgets.length } };
     }
     if (url.includes("/api/auth/profile/")) {
-      return { data: DEFAULT_USER };
+      const local = await getLocalProfile();
+      return { data: local };
     }
     if (url.includes("/api/ai/budget-prediction/")) {
       const today = new Date();
@@ -556,8 +582,15 @@ const api = {
   patch: async (url, data, config) => {
     try {
       const res = await rawAxios.patch(url, data, config);
-      if (res.data) return res;
+      if (res.data) {
+        await saveLocalProfile(res.data);
+        return res;
+      }
     } catch (e) {}
+    if (url.includes("/api/auth/profile/")) {
+      const saved = await saveLocalProfile(data);
+      return { data: saved };
+    }
     return { data: { ...DEFAULT_USER, ...data } };
   },
 

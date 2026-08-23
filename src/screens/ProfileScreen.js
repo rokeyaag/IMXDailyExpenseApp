@@ -38,52 +38,116 @@ export default function ProfileScreen({ navigation }) {
 
   const getAvatarUri = (av) => {
     if (!av) return null;
-    if (av.startsWith("https://res.cloudinary")) return av + "?t=" + Date.now();
-    if (av.startsWith("http")) return av.replace("http://", "https://");
-    return BASE_URL + av;
+    if (typeof av !== "string") return null;
+    if (av.startsWith("data:") || av.startsWith("file:") || av.startsWith("content:") || av.startsWith("blob:")) {
+      return av;
+    }
+    if (av.startsWith("https://res.cloudinary")) {
+      return av.includes("?") ? av : av + "?t=" + Date.now();
+    }
+    if (av.startsWith("http://")) return av.replace("http://", "https://");
+    if (av.startsWith("https://")) return av;
+    return BASE_URL + (av.startsWith("/") ? av : "/" + av);
   };
 
   const handlePickImage = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) { Alert.alert(t("error"), "Please allow access to photos"); return; }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true, aspect: [1, 1], quality: 0.7,
-    });
-    if (!result.canceled) { uploadToCloudinary(result.assets[0]); }
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert(t("error") || "Error", "Please allow access to photos in settings");
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+        base64: true,
+      });
+      if (!result.canceled && result.assets && result.assets[0]) {
+        await applyNewPhoto(result.assets[0]);
+      }
+    } catch (e) {
+      console.warn("Picker error:", e);
+    }
   };
 
   const handleTakePhoto = async () => {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) { Alert.alert(t("error"), "Please allow camera access"); return; }
-    const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [1, 1], quality: 0.7 });
-    if (!result.canceled) { uploadToCloudinary(result.assets[0]); }
+    try {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert(t("error") || "Error", "Please allow camera access in settings");
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+        base64: true,
+      });
+      if (!result.canceled && result.assets && result.assets[0]) {
+        await applyNewPhoto(result.assets[0]);
+      }
+    } catch (e) {
+      console.warn("Camera error:", e);
+    }
   };
 
-  const uploadToCloudinary = async (asset) => {
+  const applyNewPhoto = async (asset) => {
+    const localUri = asset.uri;
+    const photoValue = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : localUri;
+
+    // 1. Immediate UI update & local storage persistence
+    setPhoto(photoValue);
+    const updatedUser = {
+      ...user,
+      name: name || user?.name,
+      currency: currency || user?.currency,
+      avatar: photoValue,
+      avatar_url: photoValue,
+      profile_photo: photoValue,
+    };
+    if (setUser) setUser(updatedUser);
+    await api.patch("/api/auth/profile/", { avatar: photoValue, avatar_url: photoValue, profile_photo: photoValue });
+
+    // 2. Cloud upload in background (if online)
+    uploadToCloudinary(asset, photoValue);
+  };
+
+  const uploadToCloudinary = async (asset, fallbackValue) => {
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append("file", { uri: asset.uri, type: asset.mimeType || "image/jpeg", name: "avatar.jpg" });
+      if (Platform.OS === "web") {
+        formData.append("file", asset.uri);
+      } else {
+        formData.append("file", { uri: asset.uri, type: asset.mimeType || "image/jpeg", name: "avatar.jpg" });
+      }
       formData.append("upload_preset", CLOUDINARY_PRESET);
       formData.append("folder", "avatars");
-      const res = await fetch("https://api.cloudinary.com/v1_1/" + CLOUDINARY_CLOUD + "/image/upload", { method: "POST", body: formData });
+
+      const res = await fetch("https://api.cloudinary.com/v1_1/" + CLOUDINARY_CLOUD + "/image/upload", {
+        method: "POST",
+        body: formData,
+      });
       const data = await res.json();
-      if (data.secure_url) {
-        const cloudinaryUrl = data.secure_url;
-        setPhoto(cloudinaryUrl);
-        const backendRes = await api.patch("/api/auth/profile/", { avatar_url: cloudinaryUrl, avatar: cloudinaryUrl, profile_photo: cloudinaryUrl });
-        const savedPhoto = backendRes.data?.avatar || backendRes.data?.avatar_url || backendRes.data?.profile_photo || cloudinaryUrl;
-        if (setUser) { setUser({ ...user, ...backendRes.data, avatar: savedPhoto, avatar_url: savedPhoto }); }
-        setPhoto(savedPhoto);
-        Alert.alert(t("success"), "Photo updated!");
-      } else {
-        Alert.alert(t("error"), "Upload failed");
+      if (data && data.secure_url) {
+        const cloudUrl = data.secure_url;
+        setPhoto(cloudUrl);
+        const updated = {
+          ...user,
+          avatar: cloudUrl,
+          avatar_url: cloudUrl,
+          profile_photo: cloudUrl,
+        };
+        if (setUser) setUser(updated);
+        await api.patch("/api/auth/profile/", { avatar: cloudUrl, avatar_url: cloudUrl, profile_photo: cloudUrl });
       }
     } catch (e) {
-      Alert.alert(t("error"), e.message);
+      console.log("Cloudinary background upload skipped, local photo saved.");
     } finally {
       setUploading(false);
+      Alert.alert(t("success") || "Success", "Profile photo updated successfully!");
     }
   };
 

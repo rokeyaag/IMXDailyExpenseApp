@@ -130,7 +130,14 @@ export default function DashboardScreen({ navigation }) {
         <View style={styles.topBar}>
           <View style={styles.userSection}>
             <TouchableOpacity onPress={() => navigation.navigate("Profile")} style={styles.avatarWrap} activeOpacity={0.8}>
-              <Text style={styles.avatarText}>{user?.name ? user.name.charAt(0).toUpperCase() : "L"}</Text>
+              {user?.avatar || user?.avatar_url || user?.profile_photo ? (
+                <Image
+                  source={{ uri: user.avatar || user.avatar_url || user.profile_photo }}
+                  style={{ width: 44, height: 44, borderRadius: 22 }}
+                />
+              ) : (
+                <Text style={styles.avatarText}>{user?.name ? user.name.charAt(0).toUpperCase() : "L"}</Text>
+              )}
             </TouchableOpacity>
             <View style={styles.nameBlock}>
               <Text style={styles.greetingText}>{t("hello")},</Text>
